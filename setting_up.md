@@ -9,7 +9,7 @@ A comprehensive, step-by-step guide to cloning, configuring, and running the `eX
 Begin by cloning the official repository to your local machine:
 
 ```zsh
-git clone [https://github.com/farzanfaisal77/eXpServer](https://github.com/farzanfaisal77/eXpServer)
+git clone https://github.com/farzanfaisal77/eXpServer
 cd eXpServer
 
 ```
