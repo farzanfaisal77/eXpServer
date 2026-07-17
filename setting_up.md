@@ -88,14 +88,6 @@ docker compose -f docker-compose.prod.yaml up -d --build
 
 Once everything is configured, use the following commands to start the backend and frontend systems.
 
-### Start Backend
-
-```zsh
-cd expserver-tester/backend/
-npm run start
-docker compose -f docker-compose.prod.yaml up
-
-```
 
 ### Start Frontend
 
@@ -104,6 +96,14 @@ Navigate to the frontend directory (if not already running) and execute:
 ```zsh
 cd expserver-tester/frontend/
 npm run start
+
+```
+### Start Backend
+
+```zsh
+cd expserver-tester/backend/
+npm run start
+docker compose -f docker-compose.prod.yaml up
 
 ```
 
