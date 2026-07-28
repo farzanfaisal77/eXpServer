@@ -1,5 +1,5 @@
-#include<bits/stdc++.h>
-using namespace std;
+//#include<bits/stdc++.h>
+//using namespace std;
 
 #include<arpa/inet.h>
 #include<netdb.h>
@@ -19,7 +19,7 @@ using namespace std;
 
 // Function to reverse a string in-place
 void strrev(char *str) {
-  for (int start = 0, end = strlen(str) - 2; start < end; start++, end--) {
+  for (int start=0, end=strlen(str)-2; start<end; start++, end--) {
     char temp = str[start];
     str[start] = str[end];
     str[end] = temp;
@@ -52,16 +52,16 @@ int main(){
 
     //now we need to listen to the port
     listen(listen_sock_fd, MAX_ACCEPPT_BACKLOG);
-    cout<<"!!! SERVER LISTENING TO PORT "<<PORT<<"\n";
+    printf("!!! SERVER LISTENING TO PORT %d\n", PORT);
 
     //client connection and client connection details
     struct sockaddr_in client_addr;
-    socklen_t client_addr_len;
+    socklen_t client_addr_len = sizeof(client_addr);
 
     //accepting connection
     int conn_sock_fd = accept (listen_sock_fd, (struct sockaddr*)&client_addr, &client_addr_len);
     //prgm will block here until a client has connected
-    cout<<"WOW BRO CLIENT CONNECTED!!!\n";
+    printf("WOW BRO CLIENT CONNECTED!!!\n");
     while(1){
         char buff[BUFF_SIZE];
         memset(buff,0,BUFF_SIZE);
@@ -69,17 +69,17 @@ int main(){
         ssize_t read_n= recv(conn_sock_fd, buff, sizeof(buff), 0);
         //handing all read cases
         if(read_n<0){
-            cout<<"!!! NO DATA WAS READ, ERROR OCCURED, CLOSING SERVER !!!\n";
+            printf("!!! NO DATA WAS READ, ERROR OCCURED, CLOSING SERVER !!!\n");
             close(conn_sock_fd);
             exit(1);
         }
         if(read_n==0){
-            cout<<"!!! THE CLIENT HAS DISCONNECTED, CLOSING SERVER !!!\n";
+            printf("!!! THE CLIENT HAS DISCONNECTED, CLOSING SERVER !!!\n");
             close(conn_sock_fd);
             exit(1);
         }
 
-        cout<<"CLIENT_MESSAGE: "<<buff<<"\n";
+        printf("CLIENT_MESSAGE: %s", buff);
 
         strrev(buff);
 

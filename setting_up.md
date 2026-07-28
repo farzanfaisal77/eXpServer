@@ -103,7 +103,6 @@ npm run start
 ```zsh
 cd expserver-tester/backend/
 docker compose -f docker-compose.prod.yaml up
-
 ```
 
 ---
