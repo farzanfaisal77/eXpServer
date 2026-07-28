@@ -14,6 +14,15 @@
 #define BUFF_SIZE 10000
 #define MAX_ACCEPPT_BACKLOG 5
 
+// Function to reverse a string in-place
+void strrev(char *str) {
+  for (int start = 0, end = strlen(str) - 2; start < end; start++, end--) {
+    char temp = str[start];
+    str[start] = str[end];
+    str[end] = temp;
+  }
+}
+
 
 int main(){
     // creating a listening socket
@@ -50,5 +59,28 @@ int main(){
     int conn_sock_fd = accept (listen_sock_fd, (struct sockaddr*)&client_addr, &client_addr_len);
     //prgm will block here until a client has connected
     printf("WOW BRO CLIENT CONNECTED!!!\n");
-    
+    while(1){
+        char buff[BUFF_SIZE];
+        memset(buff,0,BUFF_SIZE);
+        //read data coming from client into the buffer
+        ssize_t read_n= recv(conn_sock_fd, buff, sizeof(buff), 0);
+        //handing all read cases
+        if(read_n<0){
+            printf("!!! NO DATA WAS READ, ERROR OCCURED, CLOSING SERVER !!!\n");
+            close(conn_sock_fd);
+            exit(1);
+        }
+        if(read_n==0){
+            printf("!!! THE CLIENT HAS DISCONNECTED, CLOSING SERVER !!!\n");
+            close(conn_sock_fd);
+            exit(1);
+        }
+
+        printf("CLIENT_MESSAGE: %s", buff);
+
+        strrev(buff);
+
+        //send reversed string to client
+        send(conn_sock_fd, buff, read_n, 0);
+    }
 }
