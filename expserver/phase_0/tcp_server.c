@@ -53,7 +53,7 @@ int main(){
 
     //client connection and client connection details
     struct sockaddr_in client_addr;
-    socklen_t client_addr_len;
+    socklen_t client_addr_len = sizeof(client_addr);
 
     //accepting connection
     int conn_sock_fd = accept (listen_sock_fd, (struct sockaddr*)&client_addr, &client_addr_len);
