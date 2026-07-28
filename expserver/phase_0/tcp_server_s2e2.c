@@ -37,7 +37,6 @@ int main(){
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
     while(1){
-        int flag=0;
     int conn_sock_fd = accept (listen_sock_fd, (struct sockaddr*)&client_addr, &client_addr_len);
     printf("WOW BRO CLIENT CONNECTED!!!\n");
     while(1){
@@ -53,7 +52,6 @@ int main(){
         if(read_n==0){
             printf("!!! THE CLIENT HAS DISCONNECTED, CLOSING SERVER !!!\n");
             close(conn_sock_fd);
-            flag=1;
             break;
         }
 
