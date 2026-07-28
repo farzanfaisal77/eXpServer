@@ -31,6 +31,25 @@ int main(){
     else{
         printf("!!! SUCCESS! CONNECTED TO TCP SERVER !!!\n");
     }
+    while(1){
+        char* line=NULL;
+        //line_len is space that is malloced by getline after it reas the line. this will be space occupied by line var
+        //read_n is actual number of bytes read
+        size_t line_len=0, read_n=0;
+        printf("ENTER SERVER MESSAGE: ");
+        read_n = getline(&line, &line_len, stdin);
+        //send the read line to the server. whatever the client socket gets is forwarded to the server kernel because of the connect() we did above
+        send(client_sock_fd, line, read_n, 0);
+        char buff[BUFF_SIZE];
+        memset(buff,0,BUFF_SIZE);
+        //recieving what the server kernel send to the client socket
+        read_n = recv(client_sock_fd, buff,BUFF_SIZE, 0);
+        if(read_n <=0 ){
+            printf("!!! CLIENT CLOSED / ERROR RECIEVING MESSAGE !!!");
+            exit(1);
+        }
 
-
+        printf("SERVER MESSAGE: %s", buff);
+    }
+    return 0;
 }
