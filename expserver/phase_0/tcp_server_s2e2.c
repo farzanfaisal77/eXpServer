@@ -47,7 +47,7 @@ int main(){
         if(read_n<0){
             printf("!!! NO DATA WAS READ, ERROR OCCURED, CLOSING SERVER !!!\n");
             close(conn_sock_fd);
-            flag=1;
+            exit(1);
             break;
         }
         if(read_n==0){
