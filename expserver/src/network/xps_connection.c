@@ -3,24 +3,13 @@
 #include "xps_connection.h"
 
 void strrev(char *str) {
-  if (str == NULL) return;
-
-  int start = 0;
-  int end = (int)strlen(str) - 1;
-
-  // Preserve trailing newline if present (for line-buffered tests/netcat)
-  while (end >= 0 && (str[end] == '\n' || str[end] == '\r')) {
-    end--;
-  }
-
-  while (start < end) {
+  for (int start=0, end=strlen(str)-2; start<end; start++, end--) {
     char temp = str[start];
     str[start] = str[end];
     str[end] = temp;
-    start++;
-    end--;
   }
 }
+
 
 xps_connection_t *xps_connection_create(int epoll_fd, int sock_fd) {
 
@@ -103,8 +92,9 @@ void xps_connection_read_handler(xps_connection_t *connection) {
 
   buff[read_n] = '\0';
 
-  /* print client message */
-	printf("[CLIENT MESSAGE on PORT %d]:\n%s", connection->listener->port, buff);
+  if (connection->listener != NULL) {
+  printf("[CLIENT MESSAGE on PORT %d]:\n%s", connection->listener->port, buff);
+}
 
   /* reverse client message */
 	strrev(buff);

@@ -124,6 +124,6 @@ void xps_listener_connection_handler(xps_listener_t *listener) {
     return;
   }
   client->listener = listener;
-
-  logger(LOG_INFO, "xps_listener_connection_handler()", "new connection on port %d", listener->port);
+  if(listener != NULL){
+  logger(LOG_INFO, "xps_listener_connection_handler()", "new connection on port %d", listener->port);}
 }
