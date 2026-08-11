@@ -30,7 +30,6 @@ xps_connection_t *xps_connection_create(int epoll_fd, int sock_fd) {
     return NULL;
   }
 
-  make_socket_non_blocking(sock_fd);
 
   /* attach sock_fd to epoll */
   xps_loop_attach(epoll_fd, sock_fd, EPOLLIN);
