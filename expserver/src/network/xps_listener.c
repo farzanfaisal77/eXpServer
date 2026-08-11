@@ -95,7 +95,9 @@ void xps_listener_destroy(xps_listener_t *listener) {
   // Close socket
   close(listener->sock_fd);
 
+  if(listener != NULL){
   logger(LOG_DEBUG, "xps_listener_destroy()", "destroyed listener on port %d", listener->port);
+  }
 
   // Free listener instance
   free(listener);
