@@ -18,8 +18,7 @@ int main() {
   //Create listeners on ports 8001, 8002, 8003
   for (int port = 8001; port <= 8003; port++) {
     /* create listener instance using xps_listener_create() */
-    xps_listener_t* listener = xps_listener_create(epoll_fd,"127.0.0.1" ,port);
-    vec_push(&listeners, listener);
+    xps_listener_t* listener = xps_listener_create(epoll_fd,"0.0.0.0" ,port);
     logger(LOG_INFO, "main()", "Server listening on port %u", port);
   }
 

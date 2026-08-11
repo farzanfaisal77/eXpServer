@@ -3,10 +3,22 @@
 #include "xps_connection.h"
 
 void strrev(char *str) {
-  for (int start=0, end=strlen(str)-2; start<end; start++, end--) {
+  if (str == NULL) return;
+
+  int start = 0;
+  int end = (int)strlen(str) - 1;
+
+  // Trim BOTH \r and \n from the end index if present
+  while (end >= 0 && (str[end] == '\n' || str[end] == '\r')) {
+    end--;
+  }
+
+  while (start < end) {
     char temp = str[start];
     str[start] = str[end];
     str[end] = temp;
+    start++;
+    end--;
   }
 }
 
