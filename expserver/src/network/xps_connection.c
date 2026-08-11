@@ -8,7 +8,7 @@ void strrev(char *str) {
   int start = 0;
   int end = (int)strlen(str) - 1;
 
-  // Trim BOTH \r and \n from the end index if present
+  // Preserve trailing newline if present (for line-buffered tests/netcat)
   while (end >= 0 && (str[end] == '\n' || str[end] == '\r')) {
     end--;
   }
@@ -29,6 +29,8 @@ xps_connection_t *xps_connection_create(int epoll_fd, int sock_fd) {
     logger(LOG_ERROR, "xps_connection_create()", "malloc() failed for 'connection'");
     return NULL;
   }
+
+  make_socket_non_blocking(sock_fd);
 
   /* attach sock_fd to epoll */
   xps_loop_attach(epoll_fd, sock_fd, EPOLLIN);
