@@ -17,8 +17,6 @@
 
 // 3rd party libraries
 #include "lib/vec/vec.h" // https://github.com/rxi/vec
-// Inside src/xps.h
-#include "utils/xps_utils.h"
 
 // Constants
 #define DEFAULT_BACKLOG 64

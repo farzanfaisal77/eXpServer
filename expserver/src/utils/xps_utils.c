@@ -3,9 +3,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 
-bool is_valid_port(u_int port) {
-    return (port > 0 && port <= 65535);
-}
+bool is_valid_port(u_int port) { return port >= 0 && port <= 65535; }
 
 struct addrinfo *xps_getaddrinfo(const char *host, u_int port) {
   assert(host != NULL);
@@ -39,7 +37,26 @@ struct addrinfo *xps_getaddrinfo(const char *host, u_int port) {
   return result;
 }
 
-char *get_remote_ip(int sock_fd) {
+int make_socket_non_blocking(u_int sock_fd) {
+  // Get the current socket flags
+  int flags = fcntl(sock_fd, F_GETFL, 0);
+  if (flags < 0) {
+    logger(LOG_ERROR, "make_socket_non_blocking()", "failed to get flags");
+    perror("Error message");
+    return -1;
+  }
+
+  // Set flags with O_NONBLOCK
+  if (fcntl(sock_fd, F_SETFL, flags | O_NONBLOCK) < 0) {
+    logger(LOG_ERROR, "make_socket_non_blocking()", "failed to set flags");
+    perror("Error message");
+    return -1;
+  }
+
+  return 0;
+}
+
+char *get_remote_ip(u_int sock_fd) {
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);
   char ipstr[INET_ADDRSTRLEN];
@@ -59,23 +76,4 @@ char *get_remote_ip(int sock_fd) {
   inet_ntop(AF_INET, &addr.sin_addr, ip_str, INET_ADDRSTRLEN);
 
   return ip_str;
-}
-
-int make_socket_non_blocking(u_int sock_fd) {
-  // Get the current socket flags
-  int flags = fcntl(sock_fd, F_GETFL, 0);
-  if (flags < 0) {
-    logger(LOG_ERROR, "make_socket_non_blocking()", "failed to get flags");
-    perror("Error message");
-    return -1;
-  }
-
-  // Set flags with O_NONBLOCK
-  if (fcntl(sock_fd, F_SETFL, flags | O_NONBLOCK) < 0) {
-    logger(LOG_ERROR, "make_socket_non_blocking()", "failed to set flags");
-    perror("Error message");
-    return -1;
-  }
-
-  return 0;
 }

@@ -91,7 +91,7 @@ void xps_connection_read_handler(xps_connection_t *connection) {
   buff[read_n] = '\0';
 
   /* print client message */
-	printf("[CLIENT MESSAGE]:\n%s\n", buff);
+	printf("[CLIENT MESSAGE on PORT %d]:\n%s", connection->listener->port, buff);
 
   /* reverse client message */
 	strrev(buff);
