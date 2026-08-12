@@ -15,10 +15,10 @@ int main() {
   vec_init(&listeners);
   vec_init(&connections);
 
-  //Create listeners on ports 8001, 8002, 8003
-  for (int port = 8001; port <= 8003; port++) {
+  //Create listeners on ports 8001 - 8004
+  for (int port = 8001; port <= 8004; port++) {
     /* create listener instance using xps_listener_create() */
-    xps_listener_t* listener = xps_listener_create(epoll_fd,"0.0.0.0" ,port);
+    xps_listener_create(epoll_fd,"0.0.0.0" ,port);
     logger(LOG_INFO, "main()", "Server listening on port %u", port);
   }
 
@@ -75,11 +75,11 @@ void xps_loop_run(int epoll_fd) {
       /* iterate through the connections and check if curr_fd is of a connection */
       for(int i=0; i<connections.length; i++){
         xps_connection_t *curr = connections.data[i];
-		if(curr != NULL && curr->sock_fd == curr_fd){
-			connection = curr;
-			break;
-		}
+      if(curr != NULL && curr->sock_fd == curr_fd){
+        connection = curr;
+        break;
       }
+    }
 
       if (connection)
         xps_connection_read_handler(connection);

@@ -17,7 +17,7 @@ xps_listener_t *xps_listener_create(int epoll_fd, const char *host, u_int port) 
 
   // Make address reusable
   const int enable = 1;
-  if (setsockopt (sock_fd,SOL_SOCKET,SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+  if (setsockopt (sock_fd,SOL_SOCKET,SO_REUSEADDR, &enable, sizeof(enable)) < 0) {
     logger(LOG_ERROR, "xps_listener_create()", "setsockopt() failed");
     perror("Error message");
     close(sock_fd);
@@ -111,7 +111,7 @@ void xps_listener_connection_handler(xps_listener_t *listener) {
   socklen_t conn_addr_len = sizeof(conn_addr);
 
   // Accepting connection
-  int conn_sock_fd = accept(listener->sock_fd, &conn_addr, &conn_addr_len); 
+  int conn_sock_fd = accept(listener->sock_fd, (struct sockaddr*)&conn_addr, &conn_addr_len); 
   if (conn_sock_fd < 0) {
     logger(LOG_ERROR, "xps_listener_connection_handler()", "accept() failed");
     perror("Error message");
@@ -127,5 +127,6 @@ void xps_listener_connection_handler(xps_listener_t *listener) {
   }
   client->listener = listener;
   if(listener != NULL){
-  logger(LOG_INFO, "xps_listener_connection_handler()", "new connection on port %d", listener->port);}
+  logger(LOG_INFO, "xps_listener_connection_handler()", "new connection on port %d", listener->port);
+  }
 }

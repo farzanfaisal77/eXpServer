@@ -3,28 +3,27 @@
 #include "xps_connection.h"
 
 void strrev(char *str) {
-  if (str == NULL) return;
+    int len = strlen(str);
+    int start = 0;
+    int end = len - 1;
+    
+    // Check if last char is newline
+    if (len > 0 && str[end] == '\n') {
+        end--;  // Don't reverse the newline
+    }
 
-  int start = 0;
-  int end = (int)strlen(str) - 1;
-
-  while (end >= 0 && (str[end] == '\n' || str[end] == '\r')) {
-    end--;
-  }
-
-  while (start < end) {
-    char temp = str[start];
-    str[start] = str[end];
-    str[end] = temp;
-    start++;
-    end--;
-  }
+    while (start < end) {
+        char temp = str[start];
+        str[start++] = str[end];
+        str[end--] = temp;
+    }
 }
+
 
 
 xps_connection_t *xps_connection_create(int epoll_fd, int sock_fd) {
 
-  xps_connection_t *connection = (xps_connection_t*) malloc(sizeof(xps_connection_t));
+  xps_connection_t *connection = malloc(sizeof(xps_connection_t));
   if (connection == NULL) {
     logger(LOG_ERROR, "xps_connection_create()", "malloc() failed for 'connection'");
     return NULL;
@@ -86,7 +85,7 @@ void xps_connection_read_handler(xps_connection_t *connection) {
 	char buff[DEFAULT_BUFFER_SIZE];
 
 	/* read data from client using recv() */
-  long read_n = recv(connection->sock_fd, buff, DEFAULT_BUFFER_SIZE, 0);
+  long read_n = recv(connection->sock_fd, buff, sizeof(buff)-1 , 0);
 
   if (read_n < 0) {
     logger(LOG_ERROR, "xps_connection_read_handler()", "recv() failed");
@@ -105,7 +104,7 @@ void xps_connection_read_handler(xps_connection_t *connection) {
 
   if (connection->listener != NULL) {
   printf("[CLIENT MESSAGE on PORT %d]:\n%s", connection->listener->port, buff);
-}
+} //try changing this if nothing works
 
   /* reverse client message */
 	strrev(buff);
