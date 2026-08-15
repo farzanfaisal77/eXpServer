@@ -139,6 +139,19 @@ int xps_loop_attach(xps_loop_t *loop, u_int fd, int event_flags, void *ptr, xps_
 int xps_loop_detach(xps_loop_t *loop, u_int fd) {
   assert(loop != NULL);
 
-  /* fill this */
-
+    for(int i=0; i<loop->events.length ; i++){
+        loop_event_t * ev = loop->events.data[i];
+        if(ev != NULL && ev->fd==fd){ 
+            if(epoll_ctl(loop->epoll_fd,EPOLL_CTL_DEL,fd,NULL)==-1){
+                logger(LOG_ERROR, "xps_loop_detach()", "epoll_ctl() failed");
+                return E_FAIL;
+            }
+            loop_event_destroy(ev);
+            loop->events.data[i]=NULL;
+            loop->n_null_events++;
+            return OK;
+        }
+    }
+    logger(LOG_ERROR, "xps_loop_detach()", "FD not found in events vector");
+    return E_FAIL;
 }
