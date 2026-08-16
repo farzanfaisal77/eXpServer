@@ -18,7 +18,7 @@ cd eXpServer
 
 ## 2. Setting Up the Frontend
 
-Navigate to the frontend tester directory, install the required dependencies, configure the environment variables, and start the Next.js production server.
+Navigate to the frontend tester directory, install the required dependencies, configure the environment variables, and start the next.js production server.
 
 ### Navigate & Install Dependencies
 
