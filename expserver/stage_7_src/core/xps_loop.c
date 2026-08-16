@@ -1,4 +1,5 @@
-#include<xps_loop.h>
+#include "../xps.h"
+#include "xps_loop.h"
 
 loop_event_t *loop_event_create(u_int fd, void *ptr, xps_handler_t read_cb) {
   assert(ptr != NULL);
@@ -154,4 +155,51 @@ int xps_loop_detach(xps_loop_t *loop, u_int fd) {
     }
     logger(LOG_ERROR, "xps_loop_detach()", "FD not found in events vector");
     return E_FAIL;
+}
+
+
+
+void xps_loop_run(xps_loop_t *loop) {
+  /* Validate params */
+    while (1) {
+        logger(LOG_DEBUG, "xps_loop_run()", "epoll wait");
+        int n_events = epoll_wait(loop->epoll_fd, loop->epoll_events, MAX_EPOLL_EVENTS, -1);
+        logger(LOG_DEBUG, "xps_loop_run()", "epoll wait over");
+
+        logger(LOG_DEBUG, "xps_loop_run()", "handling %d events", n_events);
+
+        // Handle events
+        for (int i = 0; i < n_events; i++) {
+            logger(LOG_DEBUG, "xps_loop_run()", "handling event no. %d", i + 1);
+
+            struct epoll_event curr_epoll_event = loop->epoll_events[i];
+            loop_event_t *curr_event = curr_epoll_event.data.ptr;
+
+            // Check if event still exists. Could have been destroyed due to prev event
+            int curr_event_idx = -1;
+            for (int j = 0; j < loop->events.length; j++) {
+                if (loop->events.data[j] == curr_event) {
+                    curr_event_idx = j;
+                    break;
+                }
+            }
+            // 🟡 Above can be optimized using an RB tree
+            if (curr_event_idx == -1) {
+                logger(LOG_DEBUG, "handle_epoll_events()", "event not found. skipping");
+                continue;
+            }
+
+            // Read event
+            if (curr_epoll_event.events & EPOLLIN) {
+                logger(LOG_DEBUG, "handle_epoll_events()", "EVENT / read");
+                if (curr_event->read_cb != NULL) {
+                    // Pass the ptr from loop_event_t as a parameter to the callback
+                    curr_event->read_cb(curr_event->ptr);
+                }
+                else {
+                    logger(LOG_WARNING, "handle_epoll_events()", "read_cb is NULL");
+                }
+            }
+        }
+    }
 }
