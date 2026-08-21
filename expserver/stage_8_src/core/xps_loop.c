@@ -1,6 +1,15 @@
 #include "../xps.h"
 #include "xps_loop.h"
 
+
+bool valid_event(xps_loop_t *loop, loop_event_t *event) {
+    for (int j = 0; j < loop->events.length; j++) {
+        if (loop->events.data[j] == event)
+            return 1;
+    }
+    return 0;
+}
+
 loop_event_t *loop_event_create(u_int fd, void *ptr, xps_handler_t read_cb) {
   assert(ptr != NULL);
 
@@ -101,10 +110,12 @@ void xps_loop_destroy(xps_loop_t *loop) {
  * @param read_cb : Callback function to be called on a read event
  * @return : OK on success and E_FAIL on error
  */
-int xps_loop_attach(xps_loop_t *loop, u_int fd, int event_flags, void *ptr, xps_handler_t read_cb) {
+int xps_loop_attach(xps_loop_t *loop, u_int fd, int event_flags, void *ptr, xps_handler_t read_cb, xps_handler_t write_cb, xps_handler_t close_cb){
   assert(loop != NULL);
   assert(ptr != NULL);
   assert(read_cb != NULL);
+  /* assert(write_cb != NULL);
+  assert(close_cb != NULL); */
 
   loop_event_t * loop_event = loop_event_create(fd,ptr,read_cb);
   if(loop_event == NULL){
@@ -170,22 +181,30 @@ void xps_loop_run(xps_loop_t *loop) {
 
         // Handle events
         for (int i = 0; i < n_events; i++) {
-            logger(LOG_DEBUG, "xps_loop_run()", "handling event no. %d", i + 1);
+            logger(LOG_DEBUG, "xps_loop_run()", "handling event");
 
             struct epoll_event curr_epoll_event = loop->epoll_events[i];
             loop_event_t *curr_event = curr_epoll_event.data.ptr;
 
             // Check if event still exists. Could have been destroyed due to prev event
-            int curr_event_idx = -1;
-            for (int j = 0; j < loop->events.length; j++) {
-                if (loop->events.data[j] == curr_event) {
-                    curr_event_idx = j;
-                    break;
+            if (!valid_event(loop, curr_event)) {
+                logger(LOG_DEBUG, "handle_epoll_events()", "event might have been destroyed.");
+                continue;
+            }
+
+            // Close event
+            if (curr_epoll_event.events & (EPOLLHUP | EPOLLERR)) {
+                logger(LOG_DEBUG, "handle_epoll_events()", "EVENT / close");
+                if(curr_event->close_cb != NULL) {
+                    // Pass the ptr from loop_event_t as a parameter to the callback
+                    curr_event->close_cb(curr_event->ptr);
+                } else {
+                    logger(LOG_WARNING, "handle_epoll_events()", "close_cb is NULL");
                 }
             }
-            // 🟡 Above can be optimized using an RB tree
-            if (curr_event_idx == -1) {
-                logger(LOG_DEBUG, "handle_epoll_events()", "event not found. skipping");
+
+            if(!valid_event(loop, curr_event)) {
+                logger(LOG_DEBUG, "handle_epoll_events()", "no event after closing");
                 continue;
             }
 
@@ -195,9 +214,24 @@ void xps_loop_run(xps_loop_t *loop) {
                 if (curr_event->read_cb != NULL) {
                     // Pass the ptr from loop_event_t as a parameter to the callback
                     curr_event->read_cb(curr_event->ptr);
-                }
-                else {
+                } else {
                     logger(LOG_WARNING, "handle_epoll_events()", "read_cb is NULL");
+                }
+            }
+
+            if(!valid_event(loop, curr_event)) {
+                logger(LOG_DEBUG, "handle_epoll_events()", "no event after reading");
+                continue;
+            }
+
+            // Write event
+            if (curr_epoll_event.events & EPOLLOUT) {
+                logger(LOG_DEBUG, "handle_epoll_events()", "EVENT / write");
+                if (curr_event->write_cb != NULL) {
+                    // Pass the ptr from loop_event_t as a parameter to the callback
+                    curr_event->write_cb(curr_event->ptr);
+                } else {
+                    logger(LOG_WARNING, "handle_epoll_events()", "write_cb is NULL");
                 }
             }
         }
