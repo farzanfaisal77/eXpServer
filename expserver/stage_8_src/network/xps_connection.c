@@ -33,7 +33,7 @@ xps_connection_t *xps_connection_create(xps_core_t *core, u_int sock_fd) {
 
 
   /* attach sock_fd to epoll */
-  xps_loop_attach(core->loop, sock_fd, EPOLLIN, connection,
+  xps_loop_attach(core->loop, sock_fd, EPOLLIN | EPOLLOUT , connection,
     connection_read_handler,
     connection_write_handler,
     connection_close_handler);
