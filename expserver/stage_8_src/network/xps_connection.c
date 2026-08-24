@@ -161,6 +161,7 @@ void connection_write_handler(void* ptr){
     xps_buffer_destroy(buffer);
 
 }
+
 void connection_close_handler(void* ptr){
     xps_connection_t *connection = (xps_connection_t *)ptr;
     assert(connection != NULL);
