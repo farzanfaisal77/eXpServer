@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <fcntl.h>
 
 // 3rd party libraries
 #include "lib/vec/vec.h" // https://github.com/rxi/vec
@@ -60,5 +61,6 @@ typedef void (*xps_handler_t)(void *ptr);
 #include "network/xps_listener.h"
 #include "utils/xps_logger.h"
 #include "utils/xps_utils.h"
+#include "utils/xps_buffer.h"
 
 #endif
