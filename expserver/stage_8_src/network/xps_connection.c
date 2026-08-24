@@ -131,3 +131,14 @@ void connection_read_handler(void* ptr) {
   }
 
 }
+
+void connection_write_handler(void* ptr){
+
+}
+void connection_close_handler(void* ptr){
+    xps_connection_t *connection = (xps_connection_t *)ptr;
+    assert(connection != NULL);
+
+    logger(LOG_INFO, "connection_loop_close_handler()", "connection closed");
+    xps_connection_destroy(connection);
+}
