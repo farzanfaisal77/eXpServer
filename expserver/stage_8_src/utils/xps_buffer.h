@@ -15,9 +15,6 @@ struct xps_buffer_list_s {
   size_t len;
 };
 
-typedef struct xps_buffer_s xps_buffer_t;
-typedef struct xps_buffer_list_s xps_buffer_list_t;
-
 // xps_buffer
 xps_buffer_t *xps_buffer_create(size_t size, size_t len, u_char *data);
 void xps_buffer_destroy(xps_buffer_t *buff);
