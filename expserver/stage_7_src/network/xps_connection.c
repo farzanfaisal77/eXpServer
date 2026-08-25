@@ -1,7 +1,7 @@
 #include "../xps.h"
 #include "xps_listener.h"
 #include "xps_connection.h"
-void connection_read_handler(void *ptr);
+
 void strrev(char *str) {
     int len = strlen(str);
     int start = 0;
