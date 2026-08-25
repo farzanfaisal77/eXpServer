@@ -245,7 +245,6 @@ void xps_loop_run(xps_loop_t *loop) {
     }
 }
 
-
 bool handle_connections(xps_loop_t* loop){
 
   for(int i=0; i< loop->core->connections.length; i++){
