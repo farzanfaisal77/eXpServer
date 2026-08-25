@@ -1,27 +1,6 @@
 #include "../xps.h"
 #include "xps_listener.h"
 #include "xps_connection.h"
-void connection_read_handler(void *ptr);
-void connection_write_handler(void* ptr);
-void connection_close_handler(void* ptr);
-
-void strrev(char *str) {
-    int len = strlen(str);
-    int start = 0;
-    int end = len - 1;
-    
-    // Check if last char is newline
-    if (len > 0 && str[end] == '\n') {
-        end--;  // Don't reverse the newline
-    }
-
-    while (start < end) {
-        char temp = str[start];
-        str[start++] = str[end];
-        str[end--] = temp;
-    }
-}
-
 
 xps_connection_t *xps_connection_create(xps_core_t *core, u_int sock_fd) {
 
@@ -31,12 +10,16 @@ xps_connection_t *xps_connection_create(xps_core_t *core, u_int sock_fd) {
     return NULL;
   }
 
-
   /* attach sock_fd to epoll */
-  xps_loop_attach(core->loop, sock_fd, EPOLLIN | EPOLLOUT , connection,
+  xps_loop_attach(
+    core->loop,
+    sock_fd,
+    EPOLLIN | EPOLLOUT | EPOLLET ,
+    connection,
     connection_read_handler,
     connection_write_handler,
-    connection_close_handler);
+    connection_close_handler
+  );
 
   // Init values
   connection->core = core;
@@ -44,6 +27,8 @@ xps_connection_t *xps_connection_create(xps_core_t *core, u_int sock_fd) {
   connection->listener = NULL;
   connection->remote_ip = get_remote_ip(sock_fd);
   connection->write_buff_list = xps_buffer_list_create();
+  connection->send_handler = connection_read_handler;
+  connection->recv_handler = connection_write_handler;
 
   /* add connection to 'connections' list */
 	vec_push(&core->connections, connection);
@@ -95,10 +80,16 @@ void connection_read_handler(void* ptr) {
   long read_n = recv(connection->sock_fd, buff, sizeof(buff)-1 , 0);
 
   if (read_n < 0) {
+    if(errno == EAGAIN || errno == EWOULDBLOCK){
+      connection->read_ready=false;
+      return;
+    }
+    else{
     logger(LOG_ERROR, "xps_connection_read_handler()", "recv() failed");
     perror("Error message");
     xps_connection_destroy(connection);
     return;
+    }
   }
 
   if (read_n == 0) {
@@ -144,16 +135,16 @@ void connection_write_handler(void* ptr){
     while(bytes_written < message_len) {
         long write_n = send(connection->sock_fd, buffer->data + bytes_written, message_len - bytes_written, 0);
         if (write_n < 0) {
-            if(errno == EAGAIN || errno == EWOULDBLOCK) {
-                logger(LOG_DEBUG, "connection_write_handler()", "send() would block, try again later");
-                xps_buffer_destroy(buffer);
+            if(errno == EAGAIN || errno == EWOULDBLOCK){
+                connection->write_ready=false;
                 return;
-            }
-            logger(LOG_ERROR, "connection_write_handler()", "send() failed");
-            perror("Error message");
-            xps_connection_destroy(connection);
-            xps_buffer_destroy(buffer);
-            return;
+              }
+              else{
+              logger(LOG_ERROR, "xps_connection_read_handler()", "recv() failed");
+              perror("Error message");
+              xps_connection_destroy(connection);
+              return;
+              }
         }
         bytes_written += write_n;
         xps_buffer_list_clear(connection->write_buff_list, write_n);
@@ -168,4 +159,35 @@ void connection_close_handler(void* ptr){
 
     logger(LOG_INFO, "connection_loop_close_handler()", "connection closed");
     xps_connection_destroy(connection);
+}
+
+void connection_loop_read_handler(void *ptr){
+  assert(ptr!=NULL);
+  xps_connection_t * connection = ptr;
+  connection->read_ready=true;
+}
+
+void connection_loop_write_handler(void* ptr){
+  assert(ptr!=NULL);
+  xps_connection_t * connection = ptr;
+  connection->write_ready = true;
+}
+
+
+
+void strrev(char *str) {
+    int len = strlen(str);
+    int start = 0;
+    int end = len - 1;
+    
+    // Check if last char is newline
+    if (len > 0 && str[end] == '\n') {
+        end--;  // Don't reverse the newline
+    }
+
+    while (start < end) {
+        char temp = str[start];
+        str[start++] = str[end];
+        str[end--] = temp;
+    }
 }

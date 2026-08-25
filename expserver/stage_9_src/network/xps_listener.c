@@ -2,7 +2,6 @@
 #include "xps_listener.h"
 #include "xps_connection.h"
 
-void listener_connection_handler(void *ptr);
 xps_listener_t *xps_listener_create(xps_core_t *core, const char *host, u_int port) {
   assert(host != NULL);
   assert(is_valid_port(port)); // Will be explained later
@@ -65,7 +64,7 @@ xps_listener_t *xps_listener_create(xps_core_t *core, const char *host, u_int po
   listener->sock_fd = sock_fd;
 
   // Attach listener to loop
-  xps_loop_attach(core->loop, sock_fd, EPOLLIN, listener, listener_connection_handler,NULL,NULL);
+  xps_loop_attach(core->loop, sock_fd, EPOLLIN | EPOLLET , listener, listener_connection_handler,NULL,NULL);
 
   // Add listener to global listeners list
   vec_push(&core->listeners, listener);
@@ -106,34 +105,43 @@ void xps_listener_destroy(xps_listener_t *listener) {
 }
 
 void listener_connection_handler(void* ptr) {
-  assert(ptr != NULL);
-  xps_listener_t* listener = ptr;
-  
-  struct sockaddr conn_addr;
-  socklen_t conn_addr_len = sizeof(conn_addr);
+	assert(ptr != NULL);
+	xps_listener_t* listener = ptr;
+	
+	
 
-  // Accepting connection
-  int conn_sock_fd = accept(listener->sock_fd, (struct sockaddr*)&conn_addr, &conn_addr_len); 
-  if (conn_sock_fd < 0) {
-    logger(LOG_ERROR, "xps_listener_connection_handler()", "accept() failed");
-    perror("Error message");
-    return;
-  }
-  if(make_socket_non_blocking(conn_sock_fd)==-1){
-    logger(LOG_ERROR, "xps_listener_connection_handler()", "not able to make non blocking");
-    perror("Error message");
-    return;
-  }
+	while(1){
+		// Accepting connection
+		struct sockaddr conn_addr;
+		socklen_t conn_addr_len = sizeof(conn_addr);
+		int conn_sock_fd = accept(listener->sock_fd, (struct sockaddr*)&conn_addr, &conn_addr_len); 
+		if (conn_sock_fd < 0) {
+			if((errno == EAGAIN || errno == EWOULDBLOCK)){
+				logger(LOG_ERROR, "xps_listener_connection_handler()", "accept() failed");
+				perror("Error message");
+				break;
+			}
+		logger(LOG_ERROR, "xps_listener_connection_handler()", "accept() failed");
+		perror("Error message");
+		return;
+		}
 
-  // Creating connection instance
-  xps_connection_t *client = xps_connection_create(listener->core, conn_sock_fd); // Will be implemented later
-  if (client == NULL) {
-    logger(LOG_ERROR, "xps_listener_connection_handler()", "xps_connection_create() failed");
-    close(conn_sock_fd);
-    return;
-  }
-  client->listener = listener;
-  if(listener != NULL){
-  logger(LOG_INFO, "xps_listener_connection_handler()", "new connection on port %d", listener->port);
+		if(make_socket_non_blocking(conn_sock_fd)==-1){
+		logger(LOG_ERROR, "xps_listener_connection_handler()", "not able to make non blocking");
+		perror("Error message");
+		return;
+		}
+
+		// Creating connection instance
+		xps_connection_t *client = xps_connection_create(listener->core, conn_sock_fd); // Will be implemented later
+		if (client == NULL) {
+		logger(LOG_ERROR, "xps_listener_connection_handler()", "xps_connection_create() failed");
+		close(conn_sock_fd);
+		return;
+		}
+		client->listener = listener;
+		if(listener != NULL){
+		logger(LOG_INFO, "xps_listener_connection_handler()", "new connection on port %d", listener->port);
+		}
   }
 }
