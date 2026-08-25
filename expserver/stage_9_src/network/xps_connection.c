@@ -16,8 +16,8 @@ xps_connection_t *xps_connection_create(xps_core_t *core, u_int sock_fd) {
     sock_fd,
     EPOLLIN | EPOLLOUT | EPOLLET ,
     connection,
-    connection_read_handler,
-    connection_write_handler,
+    connection_loop_read_handler,
+    connection_loop_write_handler,
     connection_close_handler
   );
 
