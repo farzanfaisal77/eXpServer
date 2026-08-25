@@ -27,8 +27,8 @@ xps_connection_t *xps_connection_create(xps_core_t *core, u_int sock_fd) {
   connection->listener = NULL;
   connection->remote_ip = get_remote_ip(sock_fd);
   connection->write_buff_list = xps_buffer_list_create();
-  connection->send_handler = connection_read_handler;
-  connection->recv_handler = connection_write_handler;
+  connection->recv_handler = connection_read_handler;
+  connection->send_handler = connection_write_handler;
 
   /* add connection to 'connections' list */
 	vec_push(&core->connections, connection);

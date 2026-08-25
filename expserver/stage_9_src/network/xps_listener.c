@@ -117,8 +117,6 @@ void listener_connection_handler(void* ptr) {
 		int conn_sock_fd = accept(listener->sock_fd, (struct sockaddr*)&conn_addr, &conn_addr_len); 
 		if (conn_sock_fd < 0) {
 			if((errno == EAGAIN || errno == EWOULDBLOCK)){
-				logger(LOG_ERROR, "xps_listener_connection_handler()", "accept() failed");
-				perror("Error message");
 				break;
 			}
 		logger(LOG_ERROR, "xps_listener_connection_handler()", "accept() failed");

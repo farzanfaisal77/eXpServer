@@ -250,10 +250,14 @@ bool handle_connections(xps_loop_t* loop){
 
   for(int i=0; i< loop->core->connections.length; i++){
     xps_connection_t* connection = loop->core->connections.data[i];
+
+    if(connection==NULL) continue;
+
     if(connection->read_ready == true){
       connection->recv_handler(connection);
     }
-    if(connection==NULL) continue; //change to connection->data[i] if it doesnt work
+    connection = loop->core->connections.data[i];
+    if(connection==NULL) continue;
 
     if(connection->write_ready == true){
       connection->send_handler(connection);
@@ -262,7 +266,7 @@ bool handle_connections(xps_loop_t* loop){
 
   for(int i=0; i< loop->core->connections.length; i++){
     xps_connection_t* connection = loop->core->connections.data[i];
-    if(connection==NULL) continue; //change to connection->data[i] if it doesnt work
+    if(connection==NULL) continue; 
 
     if(connection->read_ready == true){
       return true;
