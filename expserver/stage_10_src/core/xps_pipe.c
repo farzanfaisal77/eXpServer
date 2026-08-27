@@ -121,3 +121,70 @@ int xps_pipe_detach_sink(xps_pipe_t *pipe) {
     return OK;
 }
 
+xps_pipe_source_t *xps_pipe_source_create(void *ptr, xps_handler_t handler_cb,
+                                            xps_handler_t close_cb) {
+    /*assert ptr, handler_cb, close_cb not null*/
+    assert(ptr!=NULL);
+    assert(handler_cb!=NULL);
+    assert(close_cb!=NULL);
+
+    /*Allocate memory for 'source' instance, if null returned log the error and return*/
+    xps_pipe_source_t* source = malloc(sizeof(xps_pipe_source_t*));
+
+    xps_pipe_t * pipe = (xps_pipe_t *)ptr;
+
+    // Init values
+    source->pipe = pipe;
+    source->ready = false;
+    source->active = false;
+    /*similarly initialise the remaining fields of source instance*/
+    source->close_cb = close_cb;
+    source->handler_cb = handler_cb;
+
+    logger(LOG_DEBUG, "xps_pipe_source_create()", "create pipe_source");
+
+    return source;
+}
+
+void xps_pipe_source_destroy(xps_pipe_source_t *source) {
+    /*assert source not null*/
+    assert(source!=NULL);
+
+    // Detach from pipe
+    if (source->pipe != NULL){
+    /*detach source from pipe*/
+        xps_pipe_detach_source(pipe);
+    }
+
+    free(source);
+
+    logger(LOG_DEBUG, "xps_pipe_source_destroy()", "destroyed pipe_source");
+}
+
+int xps_pipe_source_write(xps_pipe_source_t *source, xps_buffer_t *buff) {
+    /*assert source, buff not null*/
+    assert(source!=NULL);
+    assert(buff!=NULL);
+
+    if (source->pipe == NULL) {
+    logger(LOG_ERROR, "xps_pipe_source_write()", "source is not attached to a pipe");
+    return E_FAIL;
+    }
+
+
+    if (!xps_pipe_is_writable(pipe)) {
+    logger(LOG_ERROR, "xps_pipe_source_write()", "pipe is not writable");
+    return E_FAIL;
+    }
+
+    // Duplicate buffer
+    xps_buffer_t *dup_buff = xps_buffer_duplicate(buff);
+    if (dup_buff == NULL) {
+    logger(LOG_ERROR, "xps_pipe_source_write()", "xps_buffer_duplicate() failed");
+    return E_FAIL;
+    }
+
+    /*Append dup_buff to buff_list of pipe*/
+    xps_buffer_list_append(source->pipe->buff_list, dup_buff);
+    return OK;
+}
