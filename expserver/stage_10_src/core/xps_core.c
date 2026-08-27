@@ -22,8 +22,10 @@ xps_core_t *xps_core_create() {
   core->loop = loop;
   vec_init(&(core->listeners));
   vec_init(&(core->connections));
+  vec_init(&(core->pipes));
   core->n_null_connections = 0;
   core->n_null_listeners = 0;
+  core->n_null_pipes = 0;
 
   logger(LOG_DEBUG, "xps_core_create()", "created core");
 
