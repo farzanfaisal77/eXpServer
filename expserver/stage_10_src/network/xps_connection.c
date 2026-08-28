@@ -88,6 +88,8 @@ void xps_connection_destroy(xps_connection_t *connection) {
     }
   }
 
+  xps_pipe_source_destroy(connection->source);
+  xps_pipe_sink_destroy(connection->sink);
   /* detach connection from loop */
 	xps_loop_detach(connection->core->loop, connection->sock_fd);
 
@@ -97,10 +99,10 @@ void xps_connection_destroy(xps_connection_t *connection) {
   /* free connection->remote_ip */
 	free(connection->remote_ip);
 
-  logger(LOG_DEBUG, "xps_connection_destroy()", "destroyed connection");
-
 	/* free connection instance */
 	free(connection);
+
+  logger(LOG_DEBUG, "xps_connection_destroy()", "destroyed connection");
 
 }
 
