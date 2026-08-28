@@ -188,3 +188,84 @@ int xps_pipe_source_write(xps_pipe_source_t *source, xps_buffer_t *buff) {
     xps_buffer_list_append(source->pipe->buff_list, dup_buff);
     return OK;
 }
+
+
+xps_pipe_sink_t *xps_pipe_sink_create(void *ptr, xps_handler_t handler_cb, xps_handler_t close_cb) {
+    /*refer to xps_pipe_source_create() and fill accordingly*/
+    xps_pipe_sink_t* sink = malloc(sizeof(xps_pipe_sink_t*));
+
+    xps_pipe_t * pipe = (xps_pipe_t *)ptr;
+
+    // Init values
+    sink->pipe = pipe;
+    sink->ready = false;
+    sink->active = false;
+    sink->close_cb = close_cb;
+    sink->handler_cb = handler_cb;
+
+    logger(LOG_DEBUG, "xps_pipe_sink_create()", "create pipe_sink");
+
+    return sink;
+
+}
+
+void xps_pipe_sink_destroy(xps_pipe_sink_t *sink) {
+    /*assert sink not null*/
+    assert(sink!=NULL);
+
+    // Detach from pipe
+    if (sink->pipe != NULL){
+    /*detach source from pipe*/
+    xps_pipe_detach_sink(pipe);
+    }
+
+    free(sink);
+
+    logger(LOG_DEBUG, "xps_pipe_sink_destroy()", "destroyed pipe_sink");
+}
+
+xps_buffer_t *xps_pipe_sink_read(xps_pipe_sink_t *sink, size_t len) {
+    /*assert sink not null and len greater than 0*/
+    assert(sink!=NULL);
+    assert(len>0);
+
+    if (sink->pipe == NULL) {
+    logger(LOG_ERROR, "xps_pipe_sink_read()", "sink is not attached to a pipe");
+    return NULL;
+    }
+
+    if (sink->pipe->buff_list->len < len) {
+    logger(LOG_ERROR, "xps_pipe_sink_read()", "requested length more than available");
+    return NULL;
+    }
+
+    xps_buffer_t *buff = xps_buffer_list_read(sink->pipe->buff_list, len);
+    if (buff == NULL) {
+    logger(LOG_ERROR, "xps_pipe_sink_read()", "xps_buffer_list_read() failed");
+    return NULL;
+    }
+
+    return buff;
+}
+
+int xps_pipe_sink_clear(xps_pipe_sink_t *sink, size_t len) {
+    assert(sink != NULL);
+    assert(len > 0);
+
+    if (sink->pipe == NULL) {
+    logger(LOG_ERROR, "xps_pipe_sink_clear()", "sink is not attached to a pipe");
+    return E_FAIL;
+    }
+
+    if (sink->pipe->buff_list->len < len) {
+    logger(LOG_ERROR, "xps_pipe_sink_clear()", "requested length more than available");
+    return E_FAIL;
+    }
+
+    if (xps_buffer_list_clear(sink->pipe->buff_list, len) != OK) {
+    logger(LOG_ERROR, "xps_pipe_sink_clear()", "xps_buffer_list_clear() failed");
+    return E_FAIL;
+    }
+
+    return OK;
+}
