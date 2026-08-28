@@ -10,6 +10,28 @@ xps_connection_t *xps_connection_create(xps_core_t *core, u_int sock_fd) {
     return NULL;
   }
 
+  xps_pipe_source_t* source = xps_pipe_source_create(
+    connection,
+    connection_source_handler,
+    connection_source_close_handler);
+    if (source == NULL) {
+    logger(LOG_ERROR, "xps_connection_create()", "xps_pipe_source_create() failed");
+    free(connection);
+    return NULL;
+    }
+  
+  xps_pipe_sink_t * sink = xps_pipe_sink_create(
+    connection,
+    connection_sink_handler,
+    connection_sink_close_handler
+  );
+  if (sink == NULL) {
+    logger(LOG_ERROR, "xps_connection_create()", "xps_pipe_sink_create() failed");
+    xps_pipe_source_destroy(source);
+    free(connection);
+    return NULL;
+  }
+
   /* attach sock_fd to epoll */
   xps_loop_attach(
     core->loop,
@@ -21,15 +43,28 @@ xps_connection_t *xps_connection_create(xps_core_t *core, u_int sock_fd) {
     connection_close_handler
   );
 
+  if (xps_loop_attach(
+    core->loop,
+    sock_fd,
+    EPOLLIN | EPOLLOUT | EPOLLET ,
+    connection,
+    connection_loop_read_handler,
+    connection_loop_write_handler,
+    connection_close_handler) != OK){
+      logger(LOG_ERROR, "xps_connection_create()", "xps_loop_attach() failed");
+      xps_pipe_source_destroy(source);
+      xps_pipe_sink_destroy(sink);
+      free(connection);
+      return NULL;
+  }
+
   // Init values
   connection->core = core;
   connection->sock_fd = sock_fd;
   connection->listener = NULL;
   connection->remote_ip = get_remote_ip(sock_fd);
-  connection->write_buff_list = xps_buffer_list_create();
-  connection->recv_handler = connection_read_handler;
-  connection->send_handler = connection_write_handler;
-
+  connection->source = source;
+  connection->sink = sink;
   /* add connection to 'connections' list */
 	vec_push(&core->connections, connection);
 
