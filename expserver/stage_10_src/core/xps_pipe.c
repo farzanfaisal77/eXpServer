@@ -8,7 +8,7 @@ xps_pipe_t *xps_pipe_create(xps_core_t *core, size_t buff_thresh, xps_pipe_sourc
     assert(sink != NULL);
 
     // Alloc memory for pipe instance
-    xps_pipe_t *pipe = malloc(sizeof(xps_pipe_t*));
+    xps_pipe_t *pipe = malloc(sizeof(xps_pipe_t));
     if (pipe == NULL) {
     logger(LOG_ERROR, "xps_pipe_create()", "malloc() failed for 'pipe'");
     return NULL;
@@ -33,6 +33,8 @@ xps_pipe_t *xps_pipe_create(xps_core_t *core, size_t buff_thresh, xps_pipe_sourc
     xps_pipe_attach_source(pipe, source);
     xps_pipe_attach_sink(pipe, sink);
     /*Make both source and sink of pipe active*/
+    pipe->source->active = true;
+    pipe->sink->active = true;
 
     logger(LOG_DEBUG, "xps_pipe_create()", "created pipe");
 
@@ -44,7 +46,7 @@ void xps_pipe_destroy(xps_pipe_t *pipe) {
 
     /*Set NULL in 'pipes' list of core and increment n_null_pipes*/
     for(int i=0; i<pipe->core->pipes.length; i++){
-        if(pipe = pipe->core->pipes.data[i]){
+        if(pipe == pipe->core->pipes.data[i]){
             pipe->core->pipes.data[i] = NULL;
             pipe->core->n_null_pipes++;
         }
@@ -129,7 +131,7 @@ xps_pipe_source_t *xps_pipe_source_create(void *ptr, xps_handler_t handler_cb,
     assert(close_cb!=NULL);
 
     /*Allocate memory for 'source' instance, if null returned log the error and return*/
-    xps_pipe_source_t* source = malloc(sizeof(xps_pipe_source_t*));
+    xps_pipe_source_t* source = malloc(sizeof(xps_pipe_source_t));
 
     xps_pipe_t * pipe = (xps_pipe_t *)ptr;
 
@@ -192,7 +194,7 @@ int xps_pipe_source_write(xps_pipe_source_t *source, xps_buffer_t *buff) {
 
 xps_pipe_sink_t *xps_pipe_sink_create(void *ptr, xps_handler_t handler_cb, xps_handler_t close_cb) {
     /*refer to xps_pipe_source_create() and fill accordingly*/
-    xps_pipe_sink_t* sink = malloc(sizeof(xps_pipe_sink_t*));
+    xps_pipe_sink_t* sink = malloc(sizeof(xps_pipe_sink_t));
 
     xps_pipe_t * pipe = (xps_pipe_t *)ptr;
 

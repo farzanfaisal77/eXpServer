@@ -43,21 +43,6 @@ xps_connection_t *xps_connection_create(xps_core_t *core, u_int sock_fd) {
     connection_loop_close_handler
   );
 
-  if (xps_loop_attach(
-    core->loop,
-    sock_fd,
-    EPOLLIN | EPOLLOUT | EPOLLET ,
-    connection,
-    connection_loop_read_handler,
-    connection_loop_write_handler,
-    connection_loop_close_handler) != OK){
-      logger(LOG_ERROR, "xps_connection_create()", "xps_loop_attach() failed");
-      xps_pipe_source_destroy(source);
-      xps_pipe_sink_destroy(sink);
-      free(connection);
-      return NULL;
-  }
-
   // Init values
   connection->core = core;
   connection->sock_fd = sock_fd;
