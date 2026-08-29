@@ -221,6 +221,26 @@ void connection_sink_handler(void* ptr){
 
 }
 
+void connection_sink_close_handler(void *ptr) {
+    assert(ptr!=NULL);
+    xps_pipe_sink_t *sink = ptr;
+    xps_connection_t *connection = sink->ptr;
+
+    if (!(sink->active) && !(sink->pipe->source->active)){
+      /*close connection*/
+      connection_close(connection,false);
+    }
+}
+
+void connection_close(xps_connection_t *connection, bool peer_closed) {
+    assert(connection!=NULL);
+
+    logger(LOG_INFO, "connection_close()",
+            peer_closed ? "peer closed connection" : "closing connection");
+    /*destroy connection*/
+    xps_connection_destroy(connection);
+}
+
 
 
 void strrev(char *str) {
