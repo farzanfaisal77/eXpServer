@@ -51,7 +51,7 @@ void xps_pipe_destroy(xps_pipe_t *pipe) {
     }
     
     /*Destroy the buff_list of pipe*/
-    xps_buffer_destroy(&(pipe->buff_list));
+    xps_buffer_list_destroy(pipe->buff_list);
     /*Free the pipe*/
     free(pipe);
     logger(LOG_DEBUG, "xps_pipe_destroy()", "destroyed pipe");
@@ -153,7 +153,7 @@ void xps_pipe_source_destroy(xps_pipe_source_t *source) {
     // Detach from pipe
     if (source->pipe != NULL){
     /*detach source from pipe*/
-        xps_pipe_detach_source(pipe);
+        xps_pipe_detach_source(source->pipe);
     }
 
     free(source);
@@ -172,7 +172,7 @@ int xps_pipe_source_write(xps_pipe_source_t *source, xps_buffer_t *buff) {
     }
 
 
-    if (!xps_pipe_is_writable(pipe)) {
+    if (!xps_pipe_is_writable(source->pipe)) {
     logger(LOG_ERROR, "xps_pipe_source_write()", "pipe is not writable");
     return E_FAIL;
     }
@@ -216,7 +216,7 @@ void xps_pipe_sink_destroy(xps_pipe_sink_t *sink) {
     // Detach from pipe
     if (sink->pipe != NULL){
     /*detach source from pipe*/
-    xps_pipe_detach_sink(pipe);
+    xps_pipe_detach_sink(sink->pipe);
     }
 
     free(sink);

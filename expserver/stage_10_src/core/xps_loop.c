@@ -237,7 +237,7 @@ void handle_epoll_events(xps_loop_t *loop, int n_events) {
         loop_event_t *curr_event = curr_epoll_event.data.ptr;
 
         // Check if event still exists. Could have been destroyed due to prev event
-        if (!event_valid(loop, curr_event)) {
+        if (!valid_event(loop, curr_event)) {
             logger(LOG_DEBUG, "handle_epoll_events()", "event not found. skipping");
             continue;
         }
@@ -254,7 +254,7 @@ void handle_epoll_events(xps_loop_t *loop, int n_events) {
             }
         }
 
-        if(!event_valid(loop, curr_event)) {
+        if(!valid_event(loop, curr_event)) {
             logger(LOG_DEBUG, "handle_epoll_events()", "event not found after close_cb. skipping");
             continue;
         }
@@ -271,7 +271,7 @@ void handle_epoll_events(xps_loop_t *loop, int n_events) {
             }
         }
 
-        if(!event_valid(loop, curr_event)) {
+        if(!valid_event(loop, curr_event)) {
             logger(LOG_DEBUG, "handle_epoll_events()", "event not found after read_cb. skipping");
             continue;
         }
