@@ -106,47 +106,47 @@ void xps_connection_destroy(xps_connection_t *connection) {
 
 }
 
-void connection_read_handler(void* ptr) {
+void connection_source_handler(void* ptr) {
 
   /* validate params */
 	assert(ptr != NULL);
-  xps_connection_t *connection = ptr;
-	char buff[DEFAULT_BUFFER_SIZE];
+  xps_pipe_source_t *source = (xps_pipe_source_t *) ptr;
+  xps_connection_t *connection = source->ptr;
+	
+  xps_buffer_t * buff = xps_buffer_create(DEFAULT_BUFFER_SIZE, 0, NULL);
 
 	/* read data from client using recv() */
-  long read_n = recv(connection->sock_fd, buff, sizeof(buff)-1 , 0);
+  long read_n = recv(connection->sock_fd, buff->data, DEFAULT_BUFFER_SIZE , 0);
 
   if (read_n < 0) {
     if(errno == EAGAIN || errno == EWOULDBLOCK){
-      connection->read_ready=false;
+      xps_buffer_destroy(buff);
+      connection->source->ready = false;
       return;
     }
     else{
-    logger(LOG_ERROR, "xps_connection_read_handler()", "recv() failed");
-    perror("Error message");
-    xps_connection_destroy(connection);
-    return;
+      xps_buffer_destroy(buff);
+      logger(LOG_ERROR, "connection_source_handler()", "recv() failed");
+      connection_close(connection, false);
+      return;
     }
   }
 
   if (read_n == 0) {
-    logger(LOG_INFO, "connection_read_handler()", "peer closed connection");
-    xps_connection_destroy(connection);
+    xps_buffer_destroy(buff);
+    connection_close(connection, false);
     return;
   }
+  buff->len = read_n;
 
-  buff[read_n] = '\0';
+  if (xps_pipe_source_write(source, buff) != OK) {
+        logger(LOG_ERROR, "connection_source_handler()", "xps_pipe_source_write() failed");
+        xps_buffer_destroy(buff);
+        connection_close(connection, false);
+        return;
+    }
 
-  if (connection->listener != NULL) {
-  printf("[CLIENT MESSAGE on PORT %d]:\n%s", connection->listener->port, buff);
-} //try changing this if nothing works
-
-  /* reverse client message */
-	strrev(buff);
-
-  xps_buffer_t *buffer = xps_buffer_create(read_n, read_n, NULL);
-  memcpy(buffer->data, buff, read_n);
-  xps_buffer_list_append(connection->write_buff_list, buffer);
+    xps_buffer_destroy(buff);
 
 }
 
@@ -201,13 +201,13 @@ void connection_close_handler(void* ptr){
 void connection_loop_read_handler(void *ptr){
   assert(ptr!=NULL);
   xps_connection_t * connection = ptr;
-  connection->read_ready=true;
+  connection->source->ready=true;
 }
 
 void connection_loop_write_handler(void* ptr){
   assert(ptr!=NULL);
   xps_connection_t * connection = ptr;
-  connection->write_ready = true;
+  connection->sink->ready = true;
 }
 
 

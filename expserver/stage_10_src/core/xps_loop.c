@@ -39,15 +39,6 @@ void loop_event_destroy(loop_event_t *event) {
   logger(LOG_DEBUG, "event_destroy()", "destroyed event");
 }
 
-/**
- * Creates a new event loop instance associated with the given core.
- *
- * This function creates an epoll file descriptor, allocates memory for the xps_loop instance,
- * and initializes its values.
- *
- * @param core : The core instance to which the loop belongs
- * @return A pointer to the newly created loop instance, or NULL on failure.
- */
 xps_loop_t *xps_loop_create(xps_core_t *core) {
   assert(core != NULL);
 
@@ -76,14 +67,6 @@ xps_loop_t *xps_loop_create(xps_core_t *core) {
   return loop;
 }
 
-/**
- * Destroys the given loop instance and releases associated resources.
- *
- * This function destroys all loop_event_t instances present in loop->events list,
- * closes the epoll file descriptor and releases memory allocated for the loop instance,
- *
- * @param loop The loop instance to be destroyed.
- */
 void xps_loop_destroy(xps_loop_t *loop) {
   assert(loop != NULL);
 
@@ -99,25 +82,9 @@ void xps_loop_destroy(xps_loop_t *loop) {
   return;
 }
 
-/**
- * Attaches a FD to be monitored using epoll
- *
- * The function creates an instance of loop_event_t and attaches it to epoll.
- * Add the pointer to loop_event_t to the events list in loop
- *
- * @param loop : loop to which FD should be attached
- * @param fd : FD to be attached to epoll
- * @param event_flags : epoll event flags
- * @param ptr : Pointer to instance of xps_listener_t or xps_connection_t
- * @param read_cb : Callback function to be called on a read event
- * @return : OK on success and E_FAIL on error
- */
 int xps_loop_attach(xps_loop_t *loop, u_int fd, int event_flags, void *ptr, xps_handler_t read_cb, xps_handler_t write_cb, xps_handler_t close_cb){
   assert(loop != NULL);
   assert(ptr != NULL);
-/*   assert(read_cb != NULL);
-  assert(write_cb != NULL);
-  assert(close_cb != NULL); */
 
   loop_event_t * loop_event = loop_event_create(fd,ptr,read_cb,write_cb,close_cb);
   if(loop_event == NULL){
@@ -139,17 +106,6 @@ int xps_loop_attach(xps_loop_t *loop, u_int fd, int event_flags, void *ptr, xps_
 
 }
 
-/**
- * Remove FD from epoll
- *
- * Find the instance of loop_event_t from loop->events that matches fd param
- * and detach FD from epoll. Destroy the loop_event_t instance and set the pointer
- * to NULL in loop->events list. Increment loop->n_null_events.
- *
- * @param loop : loop instnace from which to detach fd
- * @param fd : FD to be detached
- * @return : OK on success and E_FAIL on error
- */
 int xps_loop_detach(xps_loop_t *loop, u_int fd) {
   assert(loop != NULL);
 
