@@ -51,6 +51,22 @@ void xps_core_destroy(xps_core_t *core) {
     }
   }
   vec_deinit(&(core->listeners));
+
+    // destory all pipes source and sink and deinit
+    for(int i = 0; i < core->pipes.length; i++) {
+        xps_pipe_t *pipe = core->pipes.data[i];
+        if(pipe != NULL) {
+            if(pipe->source != NULL) {
+                xps_pipe_source_destroy(pipe->source);
+            }
+            if(pipe->sink != NULL) {
+                xps_pipe_sink_destroy(pipe->sink);
+            }
+            xps_pipe_destroy(pipe);
+        }
+    }
+    vec_deinit(&(core->pipes));
+
   /* destory loop attached to core */
   if(core->loop != NULL){
     xps_loop_destroy(core->loop);

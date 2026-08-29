@@ -107,8 +107,6 @@ void xps_listener_destroy(xps_listener_t *listener) {
 void listener_connection_handler(void* ptr) {
 	assert(ptr != NULL);
 	xps_listener_t* listener = ptr;
-	
-	
 
 	while(1){
 		// Accepting connection
@@ -141,5 +139,6 @@ void listener_connection_handler(void* ptr) {
 		if(listener != NULL){
 		logger(LOG_INFO, "xps_listener_connection_handler()", "new connection on port %d", listener->port);
 		}
+    xps_pipe_create(listener->core, DEFAULT_PIPE_BUFF_THRESH, client->source, client->sink);
   }
 }
