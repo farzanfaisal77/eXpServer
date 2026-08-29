@@ -133,10 +133,10 @@ xps_pipe_source_t *xps_pipe_source_create(void *ptr, xps_handler_t handler_cb,
     /*Allocate memory for 'source' instance, if null returned log the error and return*/
     xps_pipe_source_t* source = malloc(sizeof(xps_pipe_source_t));
 
-    xps_pipe_t * pipe = (xps_pipe_t *)ptr;
 
     // Init values
-    source->pipe = pipe;
+    source->ptr = ptr;
+    source->pipe = NULL;
     source->ready = false;
     source->active = false;
     /*similarly initialise the remaining fields of source instance*/
@@ -196,10 +196,10 @@ xps_pipe_sink_t *xps_pipe_sink_create(void *ptr, xps_handler_t handler_cb, xps_h
     /*refer to xps_pipe_source_create() and fill accordingly*/
     xps_pipe_sink_t* sink = malloc(sizeof(xps_pipe_sink_t));
 
-    xps_pipe_t * pipe = (xps_pipe_t *)ptr;
 
     // Init values
-    sink->pipe = pipe;
+    sink->ptr = ptr;
+    sink->pipe = NULL;
     sink->ready = false;
     sink->active = false;
     sink->close_cb = close_cb;

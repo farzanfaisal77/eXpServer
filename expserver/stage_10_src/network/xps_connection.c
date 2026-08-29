@@ -172,7 +172,7 @@ void connection_source_close_handler(void *ptr) {
 void connection_sink_handler(void* ptr){
     assert(ptr != NULL);
     xps_pipe_sink_t * sink = ptr;
-    xps_connection_t *connection = sink->ptr;
+    xps_connection_t *connection = (xps_connection_t *) (sink->ptr);
 
 
     xps_buffer_t *buff = xps_pipe_sink_read(sink,sink->pipe->buff_list->len);
