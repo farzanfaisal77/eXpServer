@@ -21,9 +21,9 @@ void connection_sink_handler(void *ptr);
 void connection_sink_close_handler(void *ptr);
 void connection_close(xps_connection_t *connection, bool peer_closed);
 
-void connection_close_handler(void* ptr);
 void connection_loop_read_handler(void *ptr);
 void connection_loop_write_handler(void* ptr);
+void connection_loop_close_handler(void* ptr);
 
 void strrev(char *str);
 
