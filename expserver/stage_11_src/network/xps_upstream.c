@@ -12,6 +12,7 @@ xps_connection_t *xps_upstream_create(xps_core_t *core, const char *host, u_int 
     }
   struct addrinfo* info = xps_getaddrinfo(host,port);
   int connect_error = connect(upstream_sockfd, info->ai_addr, sizeof(info->ai_addrlen));
+  free(info);
 
   if (!(connect_error == 0 || errno == EINPROGRESS)) {
     logger(LOG_ERROR, "xps_upstream_create()", "connect() failed");
