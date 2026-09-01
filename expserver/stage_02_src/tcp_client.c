@@ -48,7 +48,6 @@ int main(){
             printf("!!! CLIENT CLOSED / ERROR RECIEVING MESSAGE !!!");
             exit(1);
         }
-
         printf("SERVER MESSAGE: %s", buff);
     }
     return 0;
