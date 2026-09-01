@@ -23,7 +23,6 @@ void strrev(char *str) {
   }
 }
 
-
 int main(){
     // creating a listening socket
     int listen_sock_fd = socket(AF_INET, SOCK_STREAM, 0);
