@@ -135,10 +135,19 @@ void listener_connection_handler(void* ptr) {
 		close(conn_sock_fd);
 		return;
 		}
-		client->listener = listener;
-		if(listener != NULL){
+		
+    if(listener->port == 8001){
+      xps_connection_t* connection = xps_upstream_create(listener->core, listener->host, 8001);
+      xps_pipe_create(listener->core,DEFAULT_PIPE_BUFF_THRESH,client->source, connection->sink);
+      xps_pipe_create(listener->core,DEFAULT_PIPE_BUFF_THRESH,connection->source, client->sink);
+    }
+
+		else{
+        xps_pipe_create(listener->core, DEFAULT_PIPE_BUFF_THRESH, client->source, client->sink);
+        client->listener = listener;
+    }
+    if(listener != NULL){
 		logger(LOG_INFO, "xps_listener_connection_handler()", "new connection on port %d", listener->port);
 		}
-    xps_pipe_create(listener->core, DEFAULT_PIPE_BUFF_THRESH, client->source, client->sink);
   }
 }
