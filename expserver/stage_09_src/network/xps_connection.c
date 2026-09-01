@@ -35,7 +35,6 @@ xps_connection_t *xps_connection_create(xps_core_t *core, u_int sock_fd) {
 
   logger(LOG_DEBUG, "xps_connection_create()", "created connection");
   return connection;
-
 }
 
 void xps_connection_destroy(xps_connection_t *connection) {
