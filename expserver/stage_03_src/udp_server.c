@@ -45,7 +45,6 @@ int main(){
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     
     struct sockaddr_in serveraddr;
-
     //setting up server address
     serveraddr.sin_family = AF_INET;
     serveraddr.sin_addr.s_addr = htonl(INADDR_ANY); //assings IP Address. INADDR_ANY finds any available IP on host device
