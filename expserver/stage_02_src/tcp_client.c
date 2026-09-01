@@ -50,6 +50,5 @@ int main(){
         }
         printf("SERVER MESSAGE: %s", buff);
     }
-    
     return 0;
 }
