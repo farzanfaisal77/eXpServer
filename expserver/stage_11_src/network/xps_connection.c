@@ -158,15 +158,13 @@ void connection_source_handler(void* ptr) {
 }
 
 void connection_source_close_handler(void *ptr) {
-    assert(ptr!=NULL);
-    xps_pipe_source_t *source = ptr;
-    xps_connection_t *connection = source->ptr;
+    assert(ptr != NULL);
+    xps_pipe_source_t *source = (xps_pipe_source_t *)ptr;
+    xps_connection_t *connection = (xps_connection_t *)source->ptr;
 
-    if (!(source->active) && !(source->pipe->sink->active)){
-      /*close connection*/
-      connection_close(connection,false);
+    if (!source->active && (source->pipe->sink == NULL || !source->pipe->sink->active)) {
+        connection_close(connection, false);
     }
-    
 }
 
 void connection_sink_handler(void* ptr){
@@ -207,13 +205,12 @@ void connection_sink_handler(void* ptr){
 }
 
 void connection_sink_close_handler(void *ptr) {
-    assert(ptr!=NULL);
-    xps_pipe_sink_t *sink = ptr;
-    xps_connection_t *connection = sink->ptr;
+    assert(ptr != NULL);
+    xps_pipe_sink_t *sink = (xps_pipe_sink_t *)ptr;
+    xps_connection_t *connection = (xps_connection_t *)sink->ptr;
 
-    if (!(sink->active) && !(sink->pipe->source->active)){
-      /*close connection*/
-      connection_close(connection,false);
+    if (!sink->active && (sink->pipe->source == NULL || !sink->pipe->source->active)) {
+        connection_close(connection, false);
     }
 }
 

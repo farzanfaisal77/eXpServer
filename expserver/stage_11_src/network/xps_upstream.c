@@ -3,16 +3,17 @@
 xps_connection_t *xps_upstream_create(xps_core_t *core, const char *host, u_int port) {
   /* validate parameter */
   assert(core!=NULL);
+  assert(host!=NULL);
 
   /* create a socket and connect to host and port to upstream using xps_getaddrinfo and connect function */
   u_int upstream_sockfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK , 0);
-  if(upstream_sockfd < 0) {
-        logger(LOG_ERROR, "xps_upstream_create()", "socket() failed");
-        return NULL;
-    }
   struct addrinfo* info = xps_getaddrinfo(host,port);
-  int connect_error = connect(upstream_sockfd, info->ai_addr, sizeof(info->ai_addrlen));
-  free(info);
+  if (info == NULL) {
+      logger(LOG_ERROR, "xps_upstream_create()", "xps_getaddrinfo() failed");
+      close(upstream_sockfd);
+      return NULL;
+  }
+  int connect_error = connect(upstream_sockfd, info->ai_addr, info->ai_addrlen);
 
   if (!(connect_error == 0 || errno == EINPROGRESS)) {
     logger(LOG_ERROR, "xps_upstream_create()", "connect() failed");
@@ -28,6 +29,6 @@ xps_connection_t *xps_upstream_create(xps_core_t *core, const char *host, u_int 
         close(upstream_sockfd);
         return NULL;
     }
-
-  return connection;
+    freeaddrinfo(info);
+    return connection;
 }
