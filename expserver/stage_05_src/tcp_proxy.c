@@ -18,7 +18,6 @@
 #define UPSTREAM_PORT 3000
 #define MAX_SOCKS 10
 
-
 int listen_sock_fd, epoll_fd;
 struct epoll_event events[MAX_EPOLL_EVENTS];
 int route_table[MAX_SOCKS][2],route_table_size = 0;
