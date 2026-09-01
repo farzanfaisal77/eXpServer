@@ -9,19 +9,15 @@ void strrev(char *str) {
     int len = strlen(str);
     int start = 0;
     int end = len - 1;
-    
-    // Check if last char is newline
     if (len > 0 && str[end] == '\n') {
-        end--;  // Don't reverse the newline
+        end--;
     }
-
     while (start < end) {
         char temp = str[start];
         str[start++] = str[end];
         str[end--] = temp;
     }
 }
-
 
 xps_connection_t *xps_connection_create(xps_core_t *core, u_int sock_fd) {
 
