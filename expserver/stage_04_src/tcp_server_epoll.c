@@ -25,6 +25,7 @@ void strrev(char *str) {
 }
 
 int main(){
+
         //same as stage 1 tcp server
   int listen_sock_fd = socket(AF_INET, SOCK_STREAM, 0);
   int enable = 1;
@@ -39,6 +40,7 @@ int main(){
   struct sockaddr_in client_addr;
   socklen_t client_addr_len = sizeof(client_addr);
         //until here
+
   int epoll_fd = epoll_create1(0);
   
   //to monitor specific fds and letting us know connections on it
