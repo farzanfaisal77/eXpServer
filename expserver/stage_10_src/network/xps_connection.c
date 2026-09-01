@@ -190,7 +190,6 @@ void connection_sink_handler(void* ptr){
     sink->ready=false;
     return;
     }
-
     // Socket error
     if (write_n < 0) {
     logger(LOG_ERROR, "connection_sink_handler()", "send() failed");
