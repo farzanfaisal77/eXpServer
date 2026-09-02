@@ -14,5 +14,7 @@ struct xps_file_s {
 
 xps_file_t *xps_file_create(xps_core_t *core, const char *file_path, int *error);
 void xps_file_destroy(xps_file_t *file);
+void file_source_handler(void *ptr);
+void file_source_close_handler(void *ptr);
 
 #endif

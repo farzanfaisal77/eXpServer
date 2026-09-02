@@ -1,1 +1,1 @@
-gcc -g -o xps main.c lib/vec/vec.c network/xps_connection.c network/xps_listener.c utils/xps_logger.c network/xps_upstream.c utils/xps_utils.c core/xps_core.c core/xps_loop.c utils/xps_buffer.c core/xps_pipe.c
+gcc -g -o xps main.c lib/vec/vec.c network/xps_connection.c network/xps_listener.c utils/xps_logger.c network/xps_upstream.c utils/xps_utils.c core/xps_core.c core/xps_loop.c utils/xps_buffer.c core/xps_pipe.c disk/xps_file.c disk/xps_mime.c
