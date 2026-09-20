@@ -1,8 +1,6 @@
 #ifndef XPS_H
 #define XPS_H
-
-#define _POSIX_C_SOURCE 200112L
-
+#define _GNU_SOURCE
 // Header files
 #include <arpa/inet.h>
 #include <assert.h>
@@ -13,6 +11,7 @@
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <signal.h>
 #include <fcntl.h>
@@ -51,6 +50,8 @@ struct xps_buffer_list_s;
 struct xps_pipe_s;
 struct xps_pipe_source_s;
 struct xps_pipe_sink_s;
+struct xps_file_s;
+struct xps_keyval_s;
 
 // Struct typedefs
 typedef struct xps_core_s xps_core_t;

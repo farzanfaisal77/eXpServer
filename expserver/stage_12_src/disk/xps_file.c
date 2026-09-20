@@ -1,15 +1,11 @@
-#define _DEFAULT_SOURCE
 #include "xps_file.h"
-#include "../xps.h"
-#include <stdlib.h>
-#include <sys/stat.h>
 
 xps_file_t *xps_file_create(xps_core_t *core, const char *file_path, int *error) {
-  assert(core != NULL);
+  assert(core != NULL && file_path != NULL);
 
   *error = E_FAIL;
-  /*check if file is inside the public directory*/
 
+  /*check if file is inside the public directory*/
   char *resolved_path = realpath(file_path, NULL);
   char *resolved_public = realpath("../public", NULL);
 
@@ -79,6 +75,7 @@ xps_file_t *xps_file_create(xps_core_t *core, const char *file_path, int *error)
   if(source == NULL) {
     logger(LOG_ERROR, "xps_file_create()", "malloc() failed");
     fclose(file_struct);
+    free(file);
     return NULL;
   }
 
@@ -118,7 +115,7 @@ void file_source_handler(void *ptr) {
 
   xps_pipe_source_t *source = ptr;
   /*get file from source ptr*/
-  xps_file_t* file = source->ptr;
+  xps_file_t* file = (xps_file_t *)source->ptr;
 
   /*create buffer and handle any error*/
   xps_buffer_t * buff = xps_buffer_create(DEFAULT_BUFFER_SIZE, 0, NULL);
@@ -161,7 +158,7 @@ void file_source_close_handler(void *ptr) {
     assert(ptr!=NULL);
 	xps_pipe_source_t *source = ptr;
   /*get file from source ptr*/
-    xps_file_t * file = source->ptr;
+    xps_file_t * file = (xps_file_t *)source->ptr;
 	/*deallocate file object*/
     if(file!=NULL) xps_file_destroy(file);
 }

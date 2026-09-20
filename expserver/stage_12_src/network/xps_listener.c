@@ -1,6 +1,4 @@
 #include "../xps.h"
-#include "xps_listener.h"
-#include "xps_connection.h"
 
 xps_listener_t *xps_listener_create(xps_core_t *core, const char *host, u_int port) {
   assert(host != NULL);
@@ -150,9 +148,20 @@ void listener_connection_handler(void* ptr) {
 
     else if (listener->port == 8002) {
       int error;
-      xps_file_t *file = xps_file_create(listener->core, "public/sample.txt", &error);
+      xps_file_t *file = xps_file_create(listener->core, "../public/sample.txt", &error);
+      if(!file) return;
       xps_pipe_create(listener->core, DEFAULT_PIPE_BUFF_THRESH, file->source, client->sink);
     }
+
+    else if (listener->port == 8003) {
+            int error;
+            xps_file_t *file = xps_file_create(listener->core, "../temp/file.txt", &error);
+            if (!file){
+              xps_connection_destroy(client);
+              return;
+            }
+            xps_pipe_create(listener->core, DEFAULT_PIPE_BUFF_THRESH, file->source, client->sink);
+        }
 
     else{
         xps_pipe_create(listener->core, DEFAULT_PIPE_BUFF_THRESH, client->source, client->sink);
