@@ -149,7 +149,10 @@ void listener_connection_handler(void* ptr) {
     else if (listener->port == 8002) {
       int error;
       xps_file_t *file = xps_file_create(listener->core, "../public/sample.txt", &error);
-      if(!file) return;
+      if(!file) {
+          xps_connection_destroy(client);
+          return;
+      }
       xps_pipe_create(listener->core, DEFAULT_PIPE_BUFF_THRESH, file->source, client->sink);
     }
 
