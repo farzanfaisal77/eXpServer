@@ -75,13 +75,13 @@ typedef void (*xps_handler_t)(void *ptr);
 #include "core/xps_loop.h"
 #include "core/xps_pipe.h"
 #include "core/xps_session.h"
+#include "disk/xps_file.h"
+#include "disk/xps_mime.h"
 #include "network/xps_connection.h"
 #include "network/xps_listener.h"
 #include "network/xps_upstream.h"
+#include "utils/xps_buffer.h"
 #include "utils/xps_logger.h"
 #include "utils/xps_utils.h"
-#include "utils/xps_buffer.h"
-#include "disk/xps_file.h"
-#include "disk/xps_mime.h"
 
 #endif
