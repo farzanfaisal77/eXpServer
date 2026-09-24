@@ -73,8 +73,14 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client){
             return NULL;
         }
         session->upstream = upstream;
-        xps_pipe_create(core, DEFAULT_PIPE_BUFF_THRESH, session->upstream_source,upstream->sink);
-        xps_pipe_create(core, DEFAULT_PIPE_BUFF_THRESH, upstream->source, session->upstream_sink);
+        if (xps_pipe_create(core, DEFAULT_PIPE_BUFF_THRESH, session->upstream_source,upstream->sink)==NULL ||
+        xps_pipe_create(core, DEFAULT_PIPE_BUFF_THRESH, upstream->source, session->upstream_sink)==NULL){
+            logger(LOG_ERROR, "xps_session_create()", "failed to create upstream pipes");
+            perror("Error message");
+            /* destroy session */
+            xps_session_destroy(session);
+            return NULL;
+        }
     }
 
     else if (client->listener->port == 8002) {
@@ -127,7 +133,12 @@ void client_sink_handler(void *ptr) {
 
     size_t len=sink->pipe->buff_list->len;
 
+    if (len==0) {
+        logger(LOG_ERROR, "client_sink_handler()", "xps_pipe_sink_read() failed");
+        return;
+    }
     xps_buffer_t *buff = xps_pipe_sink_read(sink,len);
+
     if (buff == NULL) {
         logger(LOG_ERROR, "client_sink_handler()", "xps_pipe_sink_read() failed");
         return;
@@ -150,6 +161,12 @@ void upstream_source_handler(void *ptr) {
     xps_pipe_source_t *source = ptr;
     xps_session_t *session = source->ptr;
 
+    if (session->from_client_buff==NULL) {
+        logger(LOG_ERROR, "upstream_source_handler()", "xps_pipe_source_write() failed");
+        source->ready = false;
+        return;
+    }
+
     if (xps_pipe_source_write(source, session->from_client_buff) != OK) {
         logger(LOG_ERROR, "upstream_source_handler()", "xps_pipe_source_write() failed");
         return;
@@ -163,7 +180,7 @@ void upstream_source_handler(void *ptr) {
     }
 
     xps_buffer_destroy(session->from_client_buff);
-
+    source->ready = false;
     set_from_client_buff(session,NULL);
     session_check_destroy(session);
 }
@@ -188,8 +205,13 @@ void upstream_sink_handler(void *ptr) {
     session->upstream_connected = true;
 
     size_t len = sink->pipe->buff_list->len;
+    if (len==0) {
+        logger(LOG_ERROR, "upstream_sink_handler()", "xps_pipe_sink_read() failed");
+        return;
+    }
 
     xps_buffer_t *buff = xps_pipe_sink_read(sink,len);
+
     if (buff == NULL) {
         logger(LOG_ERROR, "upstream_sink_handler()", "xps_pipe_sink_read() failed");
         return;
@@ -240,7 +262,7 @@ void file_sink_handler(void *ptr) {
 void file_sink_close_handler(void *ptr) {
     assert(ptr);
 
-    xps_pipe_source_t *sink = ptr;
+    xps_pipe_sink_t *sink = ptr;
     xps_session_t *session = sink->ptr;
 
     session_check_destroy(session);
