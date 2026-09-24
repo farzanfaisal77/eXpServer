@@ -182,7 +182,7 @@ void upstream_source_close_handler(void *ptr) {
 void upstream_sink_handler(void *ptr) {
     assert(ptr);
 
-    xps_pipe_source_t *sink = ptr;
+    xps_pipe_sink_t *sink = ptr;
     xps_session_t *session = sink->ptr;
 
     session->upstream_connected = true;
@@ -203,7 +203,7 @@ void upstream_sink_close_handler(void *ptr) {
   
     assert(ptr);
 
-    xps_pipe_source_t *sink = ptr;
+    xps_pipe_sink_t *sink = ptr;
     xps_session_t *session = sink->ptr;
 
     if (!session->upstream_connected && !session->upstream_error_res_set) {

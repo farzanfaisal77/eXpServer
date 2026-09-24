@@ -72,11 +72,9 @@ void xps_connection_destroy(xps_connection_t *connection) {
       break;
     }
   }
-
+  xps_loop_detach(connection->core->loop, connection->sock_fd);
   xps_pipe_source_destroy(connection->source);
   xps_pipe_sink_destroy(connection->sink);
-  /* detach connection from loop */
-	xps_loop_detach(connection->core->loop, connection->sock_fd);
 
   /* close connection socket FD */
 	close(connection->sock_fd);
@@ -162,7 +160,8 @@ void connection_source_close_handler(void *ptr) {
     xps_pipe_source_t *source = (xps_pipe_source_t *)ptr;
     xps_connection_t *connection = (xps_connection_t *)source->ptr;
 
-    if (!source->active && (source->pipe->sink == NULL || !source->pipe->sink->active)) {
+    if (!source->active &&
+        (source->pipe == NULL || source->pipe->sink == NULL || !source->pipe->sink->active)) {
         connection_close(connection, false);
     }
 }
