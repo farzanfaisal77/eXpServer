@@ -1,9 +1,9 @@
 #include "xps_session.h"
 
-xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client){
-    assert (core!=NULL && client!=NULL);
+xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client) {
+    assert(core != NULL && client != NULL);
 
-    xps_session_t* session = malloc(sizeof(xps_session_t));
+    xps_session_t *session = malloc(sizeof(xps_session_t));
     if (session == NULL) {
         logger(LOG_ERROR, "xps_session_create()", "malloc() failed for 'session'");
         return NULL;
@@ -16,7 +16,7 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client){
     session->file_sink = xps_pipe_sink_create(session, file_sink_handler, file_sink_close_handler);
 
     if (!(session->client_source && session->client_sink && session->upstream_source &&
-            session->upstream_sink && session->file_sink)) {
+          session->upstream_sink && session->file_sink)) {
         logger(LOG_ERROR, "xps_session_create()", "failed to create some sources/sinks");
 
         if (session->client_source) xps_pipe_source_destroy(session->client_source);
@@ -46,10 +46,8 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client){
     vec_push(&(core->sessions), session);
 
     // Attach client
-    if (xps_pipe_create(core, DEFAULT_PIPE_BUFF_THRESH, client->source, session->client_sink) ==
-            NULL ||
-        xps_pipe_create(core, DEFAULT_PIPE_BUFF_THRESH, session->client_source, client->sink) ==
-            NULL) {
+    if (xps_pipe_create(core, DEFAULT_PIPE_BUFF_THRESH, client->source, session->client_sink) == NULL ||
+        xps_pipe_create(core, DEFAULT_PIPE_BUFF_THRESH, session->client_source, client->sink) == NULL) {
         logger(LOG_ERROR, "xps_session_create()", "failed to create client pipes");
 
         if (session->client_source) xps_pipe_source_destroy(session->client_source);
@@ -73,17 +71,16 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client){
             return NULL;
         }
         session->upstream = upstream;
-        if (xps_pipe_create(core, DEFAULT_PIPE_BUFF_THRESH, session->upstream_source,upstream->sink)==NULL ||
-        xps_pipe_create(core, DEFAULT_PIPE_BUFF_THRESH, upstream->source, session->upstream_sink)==NULL){
+
+        // FIXED: Create upstream->source to session->upstream_sink pipe FIRST
+        if (xps_pipe_create(core, DEFAULT_PIPE_BUFF_THRESH, upstream->source, session->upstream_sink) == NULL ||
+            xps_pipe_create(core, DEFAULT_PIPE_BUFF_THRESH, session->upstream_source, upstream->sink) == NULL) {
             logger(LOG_ERROR, "xps_session_create()", "failed to create upstream pipes");
             perror("Error message");
-            /* destroy session */
             xps_session_destroy(session);
             return NULL;
         }
-    }
-
-    else if (client->listener->port == 8002) {
+    } else if (client->listener->port == 8002) {
         int error;
         xps_file_t *file = xps_file_create(core, "../public/sample.txt", &error);
         if (file == NULL) {
@@ -92,8 +89,15 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client){
             xps_session_destroy(session);
             return NULL;
         }
-        /* assign to the file member */
-        xps_pipe_create(core, DEFAULT_PIPE_BUFF_THRESH, file->source, session->file_sink);
+        
+        session->file = file;
+
+        if (xps_pipe_create(core, DEFAULT_PIPE_BUFF_THRESH, file->source, session->file_sink) == NULL) {
+            logger(LOG_ERROR, "xps_session_create()", "failed to create file pipe");
+            perror("Error message");
+            xps_session_destroy(session);
+            return NULL;
+        }
     }
 
     return session;
@@ -104,7 +108,11 @@ void client_source_handler(void *ptr) {
 
     xps_pipe_source_t *source = ptr;
     xps_session_t *session = source->ptr;
-
+    
+    if (session->to_client_buff == NULL) {
+        logger(LOG_ERROR, "client_source_handler()", "no data to write to client");
+        return;
+    }
     // write to session->to_client_buff
     if (xps_pipe_source_write(source,session->to_client_buff) != OK) {
         logger(LOG_ERROR, "client_source_handler()", "xps_pipe_source_write() failed");

@@ -21,7 +21,7 @@ xps_connection_t *xps_upstream_create(xps_core_t *core, const char *host, u_int 
     close(upstream_sockfd);
     return NULL;
   }
-
+    freeaddrinfo(info);
  /* create a connection to upstream with core and sock_fd*/
     xps_connection_t* connection = xps_connection_create(core,upstream_sockfd);
     if(connection == NULL) {
@@ -29,6 +29,6 @@ xps_connection_t *xps_upstream_create(xps_core_t *core, const char *host, u_int 
         close(upstream_sockfd);
         return NULL;
     }
-    freeaddrinfo(info);
+    
     return connection;
 }

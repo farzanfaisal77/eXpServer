@@ -176,7 +176,7 @@ bool handle_pipes(xps_loop_t *loop) {
             pipe->source->close_cb(pipe->source);
         }
 
-        if (pipe->sink && pipe->source==NULL && xps_pipe_is_readable(pipe)) {
+        if (pipe->sink && pipe->source==NULL && !xps_pipe_is_readable(pipe)) {
             pipe->sink->active = false;
             pipe->sink->close_cb(pipe->sink);
         }
