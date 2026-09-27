@@ -16,6 +16,7 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <ctype.h>
 
 // 3rd party libraries
 #include "lib/vec/vec.h" // https://github.com/rxi/vec
