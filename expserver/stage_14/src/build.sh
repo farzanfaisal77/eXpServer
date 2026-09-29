@@ -5,6 +5,8 @@ gcc -g -o xps \
     core/xps_session.c \
     disk/xps_file.c \
     disk/xps_mime.c \
+    http/xps_http.c\
+    http/xps_http_req.c\
     lib/vec/vec.c \
     network/xps_connection.c \
     network/xps_listener.c \
