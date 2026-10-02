@@ -11,7 +11,8 @@ xps_file_t *xps_file_create(xps_core_t *core, const char *file_path, int *error)
     if (resolved_path == NULL) {
         if (errno == ENOENT) {
             *error = E_NOTFOUND;
-        } else if (errno == EACCES) {
+        }
+        else if (errno == EACCES) {
             *error = E_PERMISSION;
         }
         logger(LOG_ERROR, "xps_file_create()", "realpath() failed for requested file");
