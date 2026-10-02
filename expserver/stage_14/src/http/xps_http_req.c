@@ -7,7 +7,7 @@ int http_process_request_line(xps_http_req_t *http_req, xps_buffer_t *buff) {
 
     // request line
     http_req->request_line = str_from_ptrs(http_req->request_line_start, http_req->request_line_end);
-    printf("REQUEST LINE: %s\n", http_req->request_line);
+    printf("REQUEST LINE: %s", http_req->request_line);
 
     // http method
     http_req->method = str_from_ptrs(http_req->method_start, http_req->method_end);
@@ -40,7 +40,6 @@ int http_process_request_line(xps_http_req_t *http_req, xps_buffer_t *buff) {
 
     // port number
     char *port_str = str_from_ptrs(http_req->port_start, http_req->port_end);
-    printf("PORT STR: %s\n", port_str);
     // if port_str is null assign default port number 80 for http and 443 for https
     // if not null assign atoi(port_str)
 
@@ -54,6 +53,7 @@ int http_process_request_line(xps_http_req_t *http_req, xps_buffer_t *buff) {
     }
     else {
         http_req->port = atoi(port_str);
+        printf("PORT: %d\n", http_req->port);
         free(port_str);
     }
     return OK;

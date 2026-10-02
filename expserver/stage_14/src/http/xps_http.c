@@ -222,44 +222,45 @@ int xps_http_parse_request_line(xps_http_req_t *http_req, xps_buffer_t *buff) {
 				else return E_FAIL;
 				break;
 
-            case RL_VERSION_DOT:
-                /*on '0' or '1' - assign minor to next position, next state is RL_VERSION_MINOR, fails on other inputs*/
-                if(ch == '0' || ch == '1') {
-					http_req->http_minor = p_ch;
+            /* Change this section in xps_http.c */
+
+			case RL_VERSION_DOT:
+				if (ch == '0' || ch == '1') {
 					parser_state = RL_VERSION_MINOR;
+				} else {
+					return E_FAIL;
 				}
-                else return E_FAIL;
 				break;
 
-            case RL_VERSION_MINOR:
-                if (ch == CR) {
-                parser_state = RL_CR;
-                }
-                else if (ch == LF) {
-                parser_state = RL_LF;
-                }
-                else {
-                return E_FAIL;
-                }
-                break;
-
-            case RL_CR:
-                if(ch == LF) {
+			case RL_VERSION_MINOR:
+				if (ch == CR) {
+					http_req->http_minor = p_ch; // Set end pointer AFTER the digit
+					parser_state = RL_CR;
+				} else if (ch == LF) {
+					http_req->http_minor = p_ch; // Set end pointer AFTER the digit
 					parser_state = RL_LF;
+				} else {
+					return E_FAIL;
 				}
-                else return E_FAIL;
 				break;
+				
+				case RL_CR:
+					if(ch == LF) {
+						parser_state = RL_LF;
+					}
+					else return E_FAIL;
+					break;
 
-            case RL_LF:
-                if (http_req->request_line_end == NULL) {
-                http_req->request_line_end = p_ch;
-                }
-                http_req->parser_state = H_START;
-                buff->pos = p_ch;
-                return OK;
+				case RL_LF:
+					if (http_req->request_line_end == NULL) {
+					http_req->request_line_end = p_ch;
+					}
+					http_req->parser_state = H_START;
+					buff->pos = p_ch;
+					return OK;
 
-            default:
-                return E_FAIL;
+				default:
+					return E_FAIL;
         }
     }
 
