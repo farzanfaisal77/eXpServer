@@ -136,6 +136,8 @@ struct xps_pipe_source_s;
 struct xps_pipe_sink_s;
 struct xps_file_s;
 struct xps_keyval_s;
+struct xps_session_s;
+struct xps_http_req_s;
 
 // Struct typedefs
 typedef struct xps_core_s xps_core_t;

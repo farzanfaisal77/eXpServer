@@ -41,6 +41,7 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client) {
     session->client_sink->ready = true;
     session->upstream_sink->ready = true;
     session->file_sink->ready = true;
+    session->http_req = NULL;
 
     // Add current session to core->sessions
     vec_push(&(core->sessions), session);

@@ -2,10 +2,15 @@
 
 //change if doesnt work
 bool http_strcmp(u_char *str, const char *method, size_t length){
-    if (strncasecmp((const char *)str, method, length) != 0) {
-        return false;
+    for(size_t i = 0; i < length; i++) {
+        u_char c1 = str[i];
+        u_char c2 = (u_char)method[i];
+        if(c1 >= 'A' && c1 <= 'Z') c1 |= 0x20;
+        if(c2 >= 'A' && c2 <= 'Z') c2 |= 0x20;
+        if(c1 != c2) return false;
     }
-    return method[length] == '\0';
+    if(method[length] != '\0') return false;
+    return true;
 }
 
 int xps_http_parse_request_line(xps_http_req_t *http_req, xps_buffer_t *buff) {
@@ -373,9 +378,10 @@ int xps_http_parse_header_line(xps_http_req_t *http_req, xps_buffer_t *buff) {
 
 const char *xps_http_get_header(vec_void_t *headers, const char *key) {
 	assert(headers && key);
-	for (int i=0; i < headers->length; i++) {
-		xps_keyval_t *header = (xps_keyval_t *) headers->data[i];
-		if (strcasecmp(header->key, key) == 0) return header->val;
+
+	for (int i = 0; i < headers->length; i++) {
+		xps_keyval_t *header = headers->data[i];
+		if (strcmp(header->key, key) == 0) return header->val;
 	}
 	return NULL;
 }
