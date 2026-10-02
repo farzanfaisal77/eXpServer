@@ -5,17 +5,26 @@ xps_file_t *xps_file_create(xps_core_t *core, const char *file_path, int *error)
 
   *error = E_FAIL;
 
-  /*check if file is inside the public directory*/
-  char *resolved_path = realpath(file_path, NULL);
-  char *resolved_public = realpath("../public", NULL);
+    /*check if file is inside the public directory*/
+    char *resolved_path = realpath(file_path, NULL);
 
-  if (resolved_path == NULL || resolved_public == NULL) {
-    logger(LOG_ERROR, "xps_file_create()", "realpath() failed");
-    /*free both path*/
-    free(resolved_path);
-    free(resolved_public);
-    return NULL;
-  }
+    if (resolved_path == NULL) {
+        if (errno == ENOENT) {
+            *error = E_NOTFOUND;
+        } else if (errno == EACCES) {
+            *error = E_PERMISSION;
+        }
+        logger(LOG_ERROR, "xps_file_create()", "realpath() failed for requested file");
+        return NULL;
+    }
+
+    char *resolved_public = realpath("../public", NULL);
+
+    if (resolved_public == NULL) {
+        logger(LOG_ERROR, "xps_file_create()", "realpath() failed for public directory");
+        free(resolved_path);
+        return NULL;
+    }
 
   size_t public_len = strlen(resolved_public);
   if (strncmp(resolved_path, resolved_public, public_len) != 0) {
@@ -97,13 +106,13 @@ xps_file_t *xps_file_create(xps_core_t *core, const char *file_path, int *error)
 
 
 void xps_file_destroy(xps_file_t *file) {
-  /*assert*/
-  assert(file!=NULL);
+  assert(file != NULL);
 
-  /*fill as mentioned above*/
   fclose(file->file_struct);
-  xps_pipe_source_destroy(file->source);
-  file->source=NULL;
+  if (file->source != NULL) {
+      xps_pipe_source_destroy(file->source);
+      file->source = NULL;
+  }
   free(file);
 
   logger(LOG_DEBUG, "xps_file_destroy()", "destroyed file struct");
