@@ -367,6 +367,8 @@ void xps_session_destroy(xps_session_t *session) {
 void session_process_request(xps_session_t *session) {
     assert(session);
 
+    xps_http_res_t *http_res = NULL;
+
     // BAD REQUEST
     if (session->http_req == NULL || session->http_req->path == NULL) {
         http_res = xps_http_res_create(session->core, HTTP_BAD_REQUEST);
@@ -454,21 +456,21 @@ void session_process_request(xps_session_t *session) {
                 logger(LOG_ERROR, "session_process_request()", "xps_http_res_create() failed");
                 return;
             }
-        if (session->file->mime_type) {
-            xps_http_set_header( &http_res->headers, "Content-Type", session->file->mime_type);
+            if (session->file->mime_type) {
+                xps_http_set_header(&http_res->headers, "Content-Type", session->file->mime_type);
             }
-        char len_str[32];
-        sprintf(len_str, "%zu", session->file->size);
-        xps_http_set_header( &http_res->headers, "Content-Length", len_str);
+            char len_str[32];
+            sprintf(len_str, "%zu", session->file->size);
+            xps_http_set_header(&http_res->headers, "Content-Length", len_str);
 
-        xps_buffer_t *buff = xps_http_res_serialize(http_res);
-        if (buff == NULL) {
-            logger(LOG_ERROR, "session_process_request()", "xps_http_res_serialize() failed");
+            xps_buffer_t *buff = xps_http_res_serialize(http_res);
+            if (buff == NULL) {
+                logger(LOG_ERROR, "session_process_request()", "xps_http_res_serialize() failed");
+                xps_http_res_destroy(http_res);
+                return;
+            }
+            set_to_client_buff(session, buff);
             xps_http_res_destroy(http_res);
-            return;
-        }
-        set_to_client_buff(session, buff);
-        xps_http_res_destroy(http_res);
         }
         if (xps_pipe_create(session->core, DEFAULT_PIPE_BUFF_THRESH, session->file->source, session->file_sink) == NULL) {
             logger(LOG_ERROR, "session_process_request()", "xps_pipe_create() failed for file source and file sink");
