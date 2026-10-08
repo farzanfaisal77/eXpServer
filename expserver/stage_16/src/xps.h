@@ -21,6 +21,7 @@
 
 // 3rd party libraries
 #include "lib/vec/vec.h" // https://github.com/rxi/vec
+#include "lib/parson/parson.h"
 
 // Constants
 #define DEFAULT_BACKLOG 64
@@ -121,6 +122,14 @@ typedef enum {
 
 } xps_http_parser_state_t;
 
+typedef enum xps_req_type_e {
+	REQ_FILE_SERVE,
+	REQ_REVERSE_PROXY,
+	REQ_REDIRECT,
+	REQ_METRICS,
+	REQ_INVALID
+} xps_req_type_t;
+
 // Data types
 typedef unsigned char u_char;
 typedef unsigned int u_int;
@@ -157,12 +166,18 @@ typedef struct xps_file_s xps_file_t;
 typedef struct xps_session_s xps_session_t;
 typedef struct xps_http_req_s xps_http_req_t;
 typedef struct xps_http_res_s xps_http_res_t;
+typedef struct xps_config_s xps_config_t;
+typedef struct xps_config_server_s xps_config_server_t;
+typedef struct xps_config_listener_s xps_config_listener_t;
+typedef struct xps_config_route_s xps_config_route_t;
+typedef struct xps_config_lookup_s xps_config_lookup_t;
 
 
 // Function typedefs
 typedef void (*xps_handler_t)(void *ptr);
 
 // xps headers
+#include "config/xps_config.h"
 #include "core/xps_core.h"
 #include "core/xps_loop.h"
 #include "core/xps_pipe.h"
