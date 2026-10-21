@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 int core_create(xps_config_t *config){
 	assert(config);
 
-	xps_core_t *core = xps_core_create(config);
+	core = xps_core_create(config);
 
 	for(int i=0; i<config->_all_listeners.length; i++){
 		xps_config_listener_t *config_listener = config->_all_listeners.data[i];

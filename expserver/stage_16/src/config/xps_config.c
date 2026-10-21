@@ -99,7 +99,7 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
         for (int j = 0; j < listeners->length; j++) {
             xps_config_listener_t *listener = listeners->data[j];
             if (strcmp(listener->host, client->listener->host) == 0 && listener->port == client->listener->port) {
-                has_matching_listener = true;_config_json: Pointer to the internal Parson JSON value.
+                has_matching_listener = true;
 
                 break;
             }

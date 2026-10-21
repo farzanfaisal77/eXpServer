@@ -411,9 +411,9 @@ void session_process_request(xps_session_t *session) {
     if (lookup->type == REQ_FILE_SERVE) {
 
         int error;
-        logger(LOG_DEBUG, "session_process_request()", "file_path=%s", file_path);
+        logger(LOG_DEBUG, "session_process_request()", "file_path=%s", lookup->file_path);
 
-        xps_file_t *file = xps_file_create(session->core, file_path, &error);
+        xps_file_t *file = xps_file_create(session->core, lookup->file_path, &error);
 
         session->file = file;
 
@@ -514,7 +514,7 @@ void session_process_request(xps_session_t *session) {
         xps_pipe_create(session->core, DEFAULT_PIPE_BUFF_THRESH, session->upstream_source, upstream->sink);
         xps_pipe_create(session->core, DEFAULT_PIPE_BUFF_THRESH, upstream->source, session->upstream_sink);
     }
-    
+
     else if(lookup->type == REQ_REDIRECT) {
         http_res = xps_http_res_create(session->core, lookup->http_status_code);
         xps_http_set_header( &http_res->headers, "Location", lookup->redirect_url);
