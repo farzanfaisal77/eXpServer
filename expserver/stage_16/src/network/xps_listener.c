@@ -1,75 +1,71 @@
 #include "../xps.h"
 
-xps_listener_t *xps_listener_create(xps_core_t *core, const char *host, u_int port) {
-  assert(host != NULL);
-  assert(is_valid_port(port)); // Will be explained later
+xps_listener_t *xps_listener_create(const char *host, u_int port) {
+    assert(host != NULL);
+    assert(is_valid_port(port));
 
-  // Create socket instance
-  int sock_fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
-  if (sock_fd < 0) {
-    logger(LOG_ERROR, "xps_listener_create()", "socket() failed");
-    perror("Error message");
-    return NULL;
-  }
+    // Create socket instance
+    int sock_fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+    if (sock_fd < 0) {
+      logger(LOG_ERROR, "xps_listener_create()", "socket() failed");
+      perror("Error message");
+      return NULL;
+    }
 
-  // Make address reusable
-  const int enable = 1;
-  if (setsockopt (sock_fd,SOL_SOCKET,SO_REUSEADDR, &enable, sizeof(enable)) < 0) {
-    logger(LOG_ERROR, "xps_listener_create()", "setsockopt() failed");
-    perror("Error message");
-    close(sock_fd);
-    return NULL;
-  }
+    // Make address reusable
+    const int enable = 1;
+    if (setsockopt (sock_fd,SOL_SOCKET,SO_REUSEADDR, &enable, sizeof(enable)) < 0) {
+      logger(LOG_ERROR, "xps_listener_create()", "setsockopt() failed");
+      perror("Error message");
+      close(sock_fd);
+      return NULL;
+    }
 
-  // Setup listener address
-  struct addrinfo *addr_info = xps_getaddrinfo(host, port);
-  if (addr_info == NULL) {
-    logger(LOG_ERROR, "xps_listener_create()", "xps_getaddrinfo() failed");
-    close(sock_fd);
-    return NULL;
-  }
+    // Setup listener address
+    struct addrinfo *addr_info = xps_getaddrinfo(host, port);
+    if (addr_info == NULL) {
+      logger(LOG_ERROR, "xps_listener_create()", "xps_getaddrinfo() failed");
+      close(sock_fd);
+      return NULL;
+    }
 
-  // Binding to port
-  if (bind(sock_fd, addr_info->ai_addr, addr_info->ai_addrlen) < 0) {
-    logger(LOG_ERROR, "xps_listener_create()", "failed to bind() to %s:%u", host, port);
-    perror("Error message");
+    // Binding to port
+    if (bind(sock_fd, addr_info->ai_addr, addr_info->ai_addrlen) < 0) {
+      logger(LOG_ERROR, "xps_listener_create()", "failed to bind() to %s:%u", host, port);
+      perror("Error message");
+      freeaddrinfo(addr_info); // Will be explained later
+      close(sock_fd);
+      return NULL;
+    }
     freeaddrinfo(addr_info); // Will be explained later
-    close(sock_fd);
-    return NULL;
-  }
-  freeaddrinfo(addr_info); // Will be explained later
 
-  // Listening on port
-  if (listen(sock_fd, DEFAULT_BACKLOG) < 0) {
-    logger(LOG_ERROR, "xps_listener_create()", "listen() failed");
-    perror("Error message");
-    close(sock_fd);
-    return NULL;
-  }
+    // Listening on port
+    if (listen(sock_fd, DEFAULT_BACKLOG) < 0) {
+      logger(LOG_ERROR, "xps_listener_create()", "listen() failed");
+      perror("Error message");
+      close(sock_fd);
+      return NULL;
+    }
 
-  // Create & allocate memory for a listener instance
-  xps_listener_t *listener = malloc(sizeof(xps_listener_t));
-  if (listener == NULL) {
-    logger(LOG_ERROR, "xps_listener_create()", "malloc() failed for 'listener'");
-    close(sock_fd);
-    return NULL;
-  }
+    // Create & allocate memory for a listener instance
+    xps_listener_t *listener = malloc(sizeof(xps_listener_t));
+    if (listener == NULL) {
+      logger(LOG_ERROR, "xps_listener_create()", "malloc() failed for 'listener'");
+      close(sock_fd);
+      return NULL;
+    }
 
-  // Init values
-  listener->core = core;
-  listener->host = host;
-  listener->port = port;
-  listener->sock_fd = sock_fd;
+    // Init values
+    listener->host = host;
+    listener->port = port;
+    listener->sock_fd = sock_fd;
 
-  // Attach listener to loop
-  xps_loop_attach(core->loop, sock_fd, EPOLLIN | EPOLLET , listener, listener_connection_handler,NULL,NULL);
+    // Add listener to global listeners list
+    vec_push(&core->listeners, listener);
 
-  // Add listener to global listeners list
-  vec_push(&core->listeners, listener);
+    logger(LOG_DEBUG, "xps_listener_create()", "created listener on port %d", port);
 
-  logger(LOG_DEBUG, "xps_listener_create()", "created listener on port %d", port);
-
-  return listener;
+    return listener;
 }
 
 void xps_listener_destroy(xps_listener_t *listener) {
