@@ -99,7 +99,8 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
         for (int j = 0; j < listeners->length; j++) {
             xps_config_listener_t *listener = listeners->data[j];
             if (strcmp(listener->host, client->listener->host) == 0 && listener->port == client->listener->port) {
-                has_matching_listener = true;
+                has_matching_listener = true;_config_json: Pointer to the internal Parson JSON value.
+
                 break;
             }
         }
@@ -275,4 +276,132 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
     free(lookup);
     *error = E_FAIL;
     return NULL;
+}
+
+void xps_config_lookup_destroy(xps_config_lookup_t *lookup, xps_core_t *core) {
+    assert(lookup && core);
+    
+    if(lookup->file_path) free(lookup->file_path);
+    if(lookup->dir_path) free(lookup->dir_path);
+
+    vec_deinit(&lookup->ip_whitelist);
+    vec_deinit(&lookup->ip_blacklist);
+
+    free(lookup);
+}
+
+xps_config_listener_t *parse_listener(JSON_Object *listener_object) {
+    assert(listener_object);
+
+    // Parse the listener object to extract host and port
+    const char *host = json_object_get_string(listener_object, "host");
+    u_int port = json_object_get_number(listener_object, "port");
+
+    xps_config_listener_t *listener = malloc(sizeof(xps_config_listener_t));
+    if (listener == NULL) {
+        logger(LOG_ERROR, "parse_listener()", "Failed to allocate memory for listener");
+        return NULL;
+    }
+
+    listener->host = host;
+    listener->port = port;
+
+    return listener;
+}
+
+
+xps_config_route_t *parse_route(JSON_Object *route_object) {
+    assert(route_object);
+
+    xps_config_route_t *route = malloc(sizeof(xps_config_route_t));
+    if (route == NULL) {
+        logger(LOG_ERROR, "parse_route()", "Failed to allocate memory for route");
+        return NULL;
+    }
+
+    vec_init(&route->index);
+    vec_init(&route->upstreams);
+
+    route->req_path = json_object_get_string(route_object, "req_path");
+    route->type = json_object_get_string(route_object, "type");
+    route->dir_path = NULL;
+    route->http_status_code = 0;
+    route->redirect_url = NULL;
+
+    assert(route->type);
+    assert(route->req_path);
+
+    if(strcmp(route->type, "file_serve") == 0) {
+        route->dir_path = json_object_get_string(route_object, "dir_path");
+        assert(route->dir_path);
+
+        JSON_Array *index = json_object_get_array(route_object, "index");
+        for(size_t i = 0; i < json_array_get_count(index); i++) {
+            vec_push(&route->index, (void*)json_array_get_string(index, i));
+        }
+    }
+    else if (strcmp(route->type, "reverse_proxy") == 0) {
+        JSON_Array *upstreams = json_object_get_array(route_object, "upstreams");
+        assert(upstreams);
+        for(size_t i = 0; i < json_array_get_count(upstreams); i++) {
+            vec_push(&route->upstreams, (void*)json_array_get_string(upstreams, i));
+        }
+    }
+    else if (strcmp(route->type, "redirect") == 0) {
+        route->http_status_code = (u_int)json_object_get_number(route_object, "http_status_code");
+        route->redirect_url = json_object_get_string(route_object, "redirect_url");
+
+        assert(route->http_status_code != 0);
+        assert(route->redirect_url);
+    }
+
+    return route;
+}
+
+void parse_server(JSON_Object *server_object, xps_config_server_t *server) {
+    assert(server_object && server);
+
+    vec_init(&server->listeners);
+    vec_init(&server->hostnames);
+    vec_init(&server->routes);
+
+    JSON_Array *listeners = json_object_get_array(server_object, "listeners");
+    for(size_t i = 0; i < json_array_get_count(listeners); i++) {
+        xps_config_listener_t *listener = parse_listener(json_array_get_object(listeners, i));
+        if(listener) vec_push(&server->listeners, listener);
+    }
+
+    JSON_Array *hostnames = json_object_get_array(server_object, "hostnames");
+    for(size_t i = 0; i < json_array_get_count(hostnames); i++) {
+        const char *hostname = json_array_get_string(hostnames, i);
+        if(hostname) vec_push(&server->hostnames, (void*)hostname);
+    }
+
+    JSON_Array *routes = json_object_get_array(server_object, "routes");
+    for(size_t i = 0; i < json_array_get_count(routes); i++) {
+        xps_config_route_t *route = parse_route(json_array_get_object(routes, i));
+        if(route) vec_push(&server->routes, route);
+    }
+}
+
+void parse_all_listeners(xps_config_t *config) {
+    assert(config);
+
+    for(int i = 0; i < config->servers.length; i++) {
+        xps_config_server_t *server = config->servers.data[i];
+        for(int j = 0; j < server->listeners.length; j++) {
+            xps_config_listener_t *listener = server->listeners.data[j];
+            
+            bool found = false;
+            for(int k = 0; k < config->_all_listeners.length; k++) {
+                xps_config_listener_t *existing_listener = config->_all_listeners.data[k];
+                if(strcmp(existing_listener->host, listener->host) == 0 && existing_listener->port == listener->port) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if(!found) vec_push(&config->_all_listeners, listener);
+        }
+    }
 }
