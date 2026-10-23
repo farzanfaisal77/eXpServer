@@ -409,6 +409,55 @@ void session_process_request(xps_session_t *session) {
     session->lookup = lookup;
 
     if (lookup->type == REQ_FILE_SERVE) {
+        if(lookup->dir_path != NULL) {
+            // non null dir path = directory browsing
+            xps_buffer_t *dir_html = xps_directory_browsing(lookup->dir_path, session->http_req->pathname);
+
+            if(dir_html == NULL){
+                http_res = xps_http_res_create(session->core, HTTP_INTERNAL_SERVER_ERROR);
+                if (http_res == NULL) {
+                    logger(LOG_ERROR, "session_process_request()", "xps_http_res_create() failed");
+                    return;
+                }
+                xps_buffer_t *buff = xps_http_res_serialize(http_res);
+                if (buff == NULL) {
+                    logger(LOG_ERROR, "session_process_request()", "xps_http_res_serialize() failed");
+                    xps_http_res_destroy(http_res);
+                    return;
+                }
+                set_to_client_buff(session, buff);
+                xps_http_res_destroy(http_res);
+                return;
+            }
+
+            http_res = xps_http_res_create(session->core,HTTP_OK);
+            if (http_res == NULL) {
+                logger(LOG_ERROR, "session_process_request()", "xps_http_res_create() failed");
+                xps_buffer_destroy(dir_html);
+                return;
+            }
+            http_res->body = dir_html;
+
+            xps_http_set_header(
+                &http_res->headers,
+                "Content-Type",
+                "text/html"
+            );
+
+            char len_str[32];
+            sprintf(len_str, "%zu", dir_html->len);
+            xps_http_set_header(&http_res->headers, "Content-Length", len_str);
+
+            xps_buffer_t *buff = xps_http_res_serialize(http_res);
+            if(buff == NULL) {
+                logger(LOG_ERROR, "session_process_request()", "xps_http_res_serialize() failed");
+                xps_http_res_destroy(http_res);
+                return;
+            }
+            set_to_client_buff(session, buff);
+            xps_http_res_destroy(http_res);
+            return;
+        }
 
         int error;
         logger(LOG_DEBUG, "session_process_request()", "file_path=%s", lookup->file_path);
@@ -494,6 +543,7 @@ void session_process_request(xps_session_t *session) {
             return;
         }
     }
+
     else if(lookup->type == REQ_REVERSE_PROXY) {
         char host[256];
         u_int port;

@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <time.h>
+#include <dirent.h>
 
 // 3rd party libraries
 #include "lib/vec/vec.h" // https://github.com/rxi/vec
