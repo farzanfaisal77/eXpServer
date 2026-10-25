@@ -241,7 +241,7 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
                 else free(index_file);   
             }
             if (!index_file_found) {                /*no index file so free the resource_path*/
-                lookup->file_path = resource_path;
+                lookup->dir_path = resource_path;
             }
         } 
         else {

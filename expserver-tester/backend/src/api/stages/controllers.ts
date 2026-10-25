@@ -52,6 +52,10 @@ const uploadBinaryHandler = expressAsyncHandler(async (req: Request, res: Respon
         if (existingFile) {
             await deleteFile(existingFile.filePath); // delete from filesystem
 
+            const runner = Core.runners.find(runner => (runner.stageNo.toString() == stageNo && runner.userId == req.user))
+            if (runner)
+                Core.deleteRunner(runner)
+
             await FileModel.destroy({
                 where: {
                     binaryId: existingFile.binaryId,

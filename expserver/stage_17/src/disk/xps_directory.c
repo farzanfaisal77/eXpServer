@@ -21,7 +21,8 @@ xps_buffer_t *xps_directory_browsing(const char *dir_path,const char *pathname){
 				"margin: 0;} h3{font-family: serif;margin: 12px 0px; "
 				"background-color: rgba(0,0,0,0.1); "
 				"padding: 4px 0px;}</style></head><body><h1>eXpServer</h1><h3>Index "
-				"of&nbsp;%s</h3><hr><table>",
+				"of&nbsp;%s</h3><hr><table>"
+				"<tr><th>Name</th><th>Last Modified</th><th>Size</th></tr>",
 				pathname, pathname);
 
 	// Open a directory stream using opendir function
@@ -64,16 +65,37 @@ xps_buffer_t *xps_directory_browsing(const char *dir_path,const char *pathname){
 			if (strlen(temp_pathname) > 0 && temp_pathname[strlen(temp_pathname) - 1] == '/')
 				temp_pathname[strlen(temp_pathname) - 1] = '\0';
 
+			char time_buff[20];
+			strftime(time_buff, sizeof(time_buff), "%Y-%m-%d %H:%M:%S", localtime(&file_stat.st_mtime));
+			double size_kb = (double)file_stat.st_size / 1024.0;
+
 			if (S_ISREG(file_stat.st_mode)) // IS_FILE
-				sprintf(buff + strlen(buff),
-				"<tr><td><a "
-				"href='%s/%s'>%s%s</a></td></tr>\n",
-				temp_pathname, dir_entry->d_name, dir_entry->d_name, is_dir);
+				sprintf(
+					buff + strlen(buff),
+					"<tr><td><a "
+					"href='%s/%s'>%s%s</a></td>"
+					"<td>%s</td>"
+					"<td>%.2f KB</td></tr>\n",
+					temp_pathname,
+					dir_entry->d_name,
+					dir_entry->d_name,
+					is_dir,
+					time_buff,
+					size_kb
+				);
 			else
 				sprintf(
 					buff + strlen(buff),
-					"<tr><td><a href='%s/%s'>%s%s</a></td><td></td></tr>\n",
-					temp_pathname, dir_entry->d_name, dir_entry->d_name, is_dir);
+					"<tr><td><a "
+					"href='%s/%s'>%s%s</a></td>"
+					"<td>%s</td>"
+					"<td>-</td></tr>\n",
+					temp_pathname,
+					dir_entry->d_name,
+					dir_entry->d_name,
+					is_dir,
+					time_buff
+				);
 			free(temp_pathname);
 		}
 
@@ -83,7 +105,7 @@ xps_buffer_t *xps_directory_browsing(const char *dir_path,const char *pathname){
 
 	closedir(dir);
 	sprintf(buff + strlen(buff), "</table></body></html>");
-	xps_buffer_t *directory_browsing = xps_buffer_create(strlen(buff)+1, strlen(buff)+1, buff);
+	xps_buffer_t *directory_browsing = xps_buffer_create(strlen(buff), strlen(buff), buff);
 
 	if (directory_browsing == NULL) {
 		logger(LOG_ERROR, "xps_directory_browsing()","xps_buffer_create() returned NULL");

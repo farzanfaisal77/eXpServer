@@ -407,7 +407,7 @@ xps_buffer_t *xps_http_serialize_headers(vec_void_t *headers) {
 		size_t h_len= strlen(header->key)+strlen(header->val)+5;
 
 		char header_str[h_len];
-		sprintf(header_str, "%s: %s\n", header->key, header->val);
+		sprintf(header_str, "%s: %s\r\n", header->key, header->val);
 		if ((buff->size-buff->len)<h_len) {
 			u_char *new_data = realloc(buff->data, buff->size*2);
 			if(new_data == NULL) {
