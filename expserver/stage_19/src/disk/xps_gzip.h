@@ -17,3 +17,9 @@ xps_gzip_t *xps_gzip_create(int level);
 void xps_gzip_destroy(xps_gzip_t *gzip);
 
 void gzip_compress(xps_gzip_t *gzip, bool flush);
+
+void gzip_sink_handler(void *ptr);
+void gzip_sink_close_handler(void *ptr);
+void gzip_source_handler(void *ptr);
+void gzip_source_close_handler(void *ptr);
+

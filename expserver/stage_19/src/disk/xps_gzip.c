@@ -61,4 +61,142 @@ void xps_gzip_destroy(xps_gzip_t *gzip) {
 
 void gzip_compress(xps_gzip_t *gzip, bool flush){
     assert(gzip);
+
+    xps_buffer_t *in_buff = NULL;
+
+    if(!flush) {
+        in_buff = xps_pipe_sink_read(gzip->sink, input_len);
+        if(!in_buff) {
+            logger(LOG_ERROR, "gzip_compress()", "xps_pipe_sink_read() failed");
+            return;
+        }
+    }
+    else {
+        in_buff = xps_buffer_create(1, 0, NULL);
+        if(!in_buff) {
+            logger(LOG_ERROR, "gzip_compress()", "xps_buffer_create() failed");
+            return;
+        }
+    }
+
+    gzip->stream.avail_in = in_buff->len;
+    gzip->stream.next_in = in_buff->data;
+    int flush_stream = flush ? Z_FINISH : Z_NO_FLUSH;
+
+    xps_buffer_list_t *out_buff_list = xps_buffer_list_create();
+    if(!out_buff_list) {
+        logger(LOG_ERROR, "gzip_compress()", "xps_buffer_list_create() failed");
+        xps_buffer_destroy(in_buff);
+        return;
+    }
+    int error;
+
+    do {
+        xps_buffer_t *out_buff = xps_buffer_create(DEFAULT_BUFFER_SIZE, 0, NULL);
+        if(!out_buff) {
+            logger(LOG_ERROR, "gzip_compress()", "xps_buffer_create() failed");
+            xps_buffer_destroy(in_buff);
+            xps_buffer_list_destroy(out_buff_list);
+            return;
+        }
+        //zlib stream output conf
+        gzip->stream.avail_out = out_buff->size;
+        gzip->stream.next_out = out_buff->data;
+        // Compress the data
+        error = deflate(&(gzip->stream), flush_stream);
+
+        // Check for errors during compression
+        if(error != Z_OK && error != Z_STREAM_END) {
+            logger(LOG_ERROR, "gzip_compress()", "deflate() failed with error code %d", error);
+            xps_buffer_destroy(in_buff);
+            xps_buffer_list_destroy(out_buff_list);
+            xps_buffer_destroy(out_buff);
+            return;
+        }
+
+        // Update the length of the output buffer based on how much data was written
+        out_buff->len = out_buff->size - gzip->stream.avail_out;
+
+        // Append the output buffer to the output buffer list if it contains data
+        if(out_buff->len > 0) 
+            xps_buffer_list_append(out_buff_list, out_buff);
+        else 
+            xps_buffer_destroy(out_buff);
+    } while (gzip->stream.avail_out == 0);
+
+    xps_buffer_t *compressed_buff = NULL;
+
+    if (out_buff_list->len > 0) {
+        compressed_buff = xps_buffer_list_read(out_buff_list, out_buff_list->len);
+        if(!compressed_buff) {
+            logger(LOG_ERROR, "gzip_compress()", "xps_buffer_list_read() failed");
+            xps_buffer_destroy(in_buff);
+            xps_buffer_list_destroy(out_buff_list);
+            return;
+        }
+    }
+
+    xps_buffer_list_destroy(out_buff_list);
+
+    if(!flush) {
+        xps_pipe_sink_clear(gzip->sink, gzip->sink->pipe->buff_list->len);
+        gzip->total_in_len += in_buff->len;
+    }
+
+    xps_buffer_destroy(in_buff);
+
+    gzip->transfer_buff = compressed_buff;
+    gzip->source->ready = (compressed_buff != NULL);
+    gzip->sink->ready = (compressed_buff == NULL);
+}
+
+
+void gzip_sink_handler(void *ptr) {
+    xps_pipe_sink_t *sink = ptr;
+    xps_gzip_t *gzip = sink->ptr;
+    gzip_compress(gzip, false);
+}
+
+void gzip_sink_close_handler(void *ptr) {
+    xps_pipe_sink_t *sink = ptr;
+    xps_gzip_t *gzip = sink->ptr;
+    gzip_compress(gzip, true);
+}
+
+void gzip_source_handler(void *ptr) {
+    assert(ptr);
+
+    xps_pipe_source_t *source = ptr;
+    xps_gzip_t *gzip = source->ptr;
+
+    if (xps_pipe_source_write(gzip->source, gzip->transfer_buff) != OK) {
+        logger(LOG_ERROR, "gzip_source_handler()", "xps_pipe_source_write() failed");
+        return;
+    }
+
+    gzip->total_out_len += gzip->transfer_buff->len;
+
+    xps_buffer_destroy(gzip->transfer_buff);
+    gzip->transfer_buff = NULL;
+
+    gzip->source->ready = false;
+    gzip->sink->ready = true;
+
+    gzip_check_destroy(gzip);
+}
+
+void gzip_source_close_handler(void *ptr) {
+    assert(ptr);
+    xps_pipe_source_t *source = ptr;
+    xps_gzip_t *gzip = source->ptr;
+
+    gzip_check_destroy(gzip);
+}
+
+void gzip_check_destroy(xps_gzip_t *gzip) {
+    assert(gzip);
+
+    if (!gzip->source->active || (!gzip->sink->active && gzip->transfer_buff == NULL)) {
+        xps_gzip_destroy(gzip);
+    }
 }
