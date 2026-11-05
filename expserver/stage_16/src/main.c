@@ -47,40 +47,18 @@ int core_create(xps_config_t *config){
             xps_core_destroy(core);
             return E_FAIL;
         }
-		int dup_fd = dup(listener->sock_fd);
-        if(dup_fd < 0) {
-            logger(LOG_ERROR, "core_create()", "dup() failed for listener %s:%u", config_listener->host, config_listener->port);
-            xps_listener_destroy(listener);
-            xps_core_destroy(core);
-            return E_FAIL;
-        }
-		xps_listener_t *dup_listener = malloc(sizeof(xps_listener_t));
-        if(dup_listener == NULL) {
-            logger(LOG_ERROR, "core_create()", "malloc() failed for dup_listener");
-            close(dup_fd);
-            xps_listener_destroy(listener);
-            xps_core_destroy(core);
-            return E_FAIL;
-        }
-		dup_listener->core = core;
-        dup_listener->host = config_listener->host;
-        dup_listener->port = config_listener->port;
-        dup_listener->sock_fd = dup_fd;
+		listener->core = core;
 
-		if(xps_loop_attach(core->loop, dup_fd, EPOLLIN | EPOLLET, dup_listener, listener_connection_handler, NULL, NULL) != OK) {
+		if(xps_loop_attach(core->loop, listener->sock_fd, EPOLLIN | EPOLLET, listener, listener_connection_handler, NULL, NULL) != OK) {
             logger(LOG_ERROR, "core_create()", "xps_loop_attach() failed for listener %s:%u", config_listener->host, config_listener->port);
-            free(dup_listener);
-            close(dup_fd);
-            xps_listener_destroy(listener);
+            close(listener->sock_fd);
+            free(listener);
             xps_core_destroy(core);
             return E_FAIL;
         }
-		vec_push(&(core->listeners), dup_listener);
+		vec_push(&(core->listeners), listener);
 
-		close(listener->sock_fd);
-        free(listener);
         logger(LOG_INFO, "core_create()", "listener created for %s:%u", config_listener->host, config_listener->port);
-		
 	}
 
 	return OK;
