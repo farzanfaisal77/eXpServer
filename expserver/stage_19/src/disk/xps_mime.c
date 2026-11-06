@@ -1,7 +1,6 @@
 #include "xps_mime.h"
 #include "../xps.h"
 
-//here, some extension-mime types pairs are given, you can add as required
 xps_keyval_t mime_types[] = {
     {".h", "text/x-c"},
     {".c", "text/x-c"},
@@ -14,11 +13,15 @@ xps_keyval_t mime_types[] = {
     {".text", "text/plain"},
     {".txt", "text/plain"},
     {".png", "image/png"},
+    {".png", "image/x-png"},
     {".jpg", "image/jpeg"},
     {".pdf", "application/pdf"},
-    {".json", "application/json"},
     {".html", "text/html"},
-    {".htm", "text/html"},
+    {".css", "text/css"},
+    {".js", "application/javascript"},
+    {".json", "application/json"},
+    {".xml", "application/xml"},
+    {".svg", "image/svg+xml"},
 };
 
 int n_mimes = sizeof(mime_types) / sizeof(mime_types[0]);

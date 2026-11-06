@@ -1,5 +1,35 @@
 #include "xps_config.h"
 
+static const char *default_gzip_mimes[] = {
+    "text/html",
+    "text/css",
+    "text/plain",
+    "text/javascript",
+    "application/javascript",
+    "application/json",
+    "application/xml",
+    "text/xml",
+    "image/svg+xml"
+};
+
+bool gzip_mime_type_allowed(const char *mime_type, vec_void_t *custom_mimes) {
+    if (mime_type == NULL)
+        return false;
+    for (size_t i = 0; i < sizeof(default_gzip_mimes) / sizeof(default_gzip_mimes[0]); i++) {
+        if (strcmp(mime_type, default_gzip_mimes[i]) == 0)
+            return true;
+    }
+    // Check route-specific GZIP MIME types
+    for (int i = 0; i < custom_mimes->length; i++) {
+        const char *custom_mime = custom_mimes->data[i];
+
+        if (strcmp(mime_type, custom_mime) == 0)
+            return true;
+    }
+
+    return false;
+}
+
 xps_config_t *xps_config_create(const char *config_path){
     assert(config_path);
 
@@ -68,6 +98,7 @@ void xps_config_destroy(xps_config_t *config) {
                     vec_deinit(&route->upstreams);
                     vec_deinit(&route->ip_whitelist);
                     vec_deinit(&route->ip_blacklist);
+                    vec_deinit(&route->gzip_mime_types);
                     free(route);
                 }
             }
@@ -87,7 +118,6 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
 
     char* host = http_req->host;
     char* pathname = http_req->pathname;
-    const char* accept_encoding = xps_http_get_header(&http_req->headers, "Accept-Encoding");
 
     // Step 1: Find matching server block
     int target_server_index = -1;
@@ -184,6 +214,11 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
     lookup->http_status_code = 0;
     lookup->redirect_url = NULL;
 
+    // Initialize GZIP settings
+    lookup->gzip_enable = false;
+    lookup->gzip_level = route->gzip_level;
+    lookup->gzip_mime_types = route->gzip_mime_types;
+
     if(strcmp(route->type, "file_serve") == 0) {
         lookup->type = REQ_FILE_SERVE;
     }
@@ -245,6 +280,7 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
             if (!index_file_found) {                /*no index file so free the resource_path*/
                 lookup->dir_path = resource_path;
             }
+            else free(resource_path);
         } 
         else {
             /*no matching type so free resource_path*/
@@ -252,6 +288,11 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
             *error = E_NOTFOUND;
             free(lookup);
             return NULL;
+        }
+        // Check whether the resolved file is eligible for GZIP
+        if (route->gzip_enable && lookup->file_path != NULL) {
+            const char *mime_type = xps_get_mime(lookup->file_path);
+            lookup->gzip_enable = gzip_mime_type_allowed(mime_type,&route->gzip_mime_types);
         }
         *error = OK;
         return lookup;
@@ -277,7 +318,8 @@ xps_config_lookup_t *xps_config_lookup(xps_config_t *config, xps_http_req_t *htt
 }
 
 void xps_config_lookup_destroy(xps_config_lookup_t *lookup, xps_core_t *core) {
-    assert(lookup && core);
+    assert(lookup);
+    assert(core);
     
     if(lookup->file_path) free(lookup->file_path);
     if(lookup->dir_path) free(lookup->dir_path);
@@ -321,6 +363,7 @@ xps_config_route_t *parse_route(JSON_Object *route_object) {
     vec_init(&route->upstreams);
     vec_init(&route->ip_whitelist);
     vec_init(&route->ip_blacklist);
+    vec_init(&route->gzip_mime_types);
 
     route->req_path = json_object_get_string(route_object, "req_path");
     route->type = json_object_get_string(route_object, "type");
@@ -359,32 +402,59 @@ xps_config_route_t *parse_route(JSON_Object *route_object) {
     JSON_Array *ip_blacklist = json_object_get_array(route_object, "ip_blacklist");
 
     if (ip_whitelist && !ip_blacklist) {
-        for (size_t i = 0; i < json_array_get_count(ip_whitelist); i++) {
+        for (size_t i=0; i<json_array_get_count(ip_whitelist); i++) {
             vec_push(&(route->ip_whitelist), (void*)json_array_get_string(ip_whitelist, i));
         }
     }
     else if (ip_blacklist && !ip_whitelist) {
-        for (size_t i = 0; i < json_array_get_count(ip_blacklist); i++) {
+        for (size_t i=0; i<json_array_get_count(ip_blacklist); i++) {
             vec_push(&(route->ip_blacklist), (void*)json_array_get_string(ip_blacklist, i));
         }
     }
     else if (ip_whitelist && ip_blacklist) {
-        for (size_t i = 0; i < json_array_get_count(ip_whitelist); i++) {
-            const char *whitelist_ip = json_array_get_string(ip_whitelist, i);
-            bool is_blacklisted = false;
-            for (size_t j = 0; j < json_array_get_count(ip_blacklist); j++) {
-                const char *blacklist_ip = json_array_get_string(ip_blacklist, j);
-                if (whitelist_ip && blacklist_ip && strcmp(whitelist_ip, blacklist_ip) == 0) {
-                    is_blacklisted = true;
+        for (size_t i=0; i<json_array_get_count(ip_blacklist); i++) {
+            const char *ip = json_array_get_string(ip_blacklist, i);
+            vec_push(&route->ip_blacklist, (void *)ip);
+        }
+
+        for (size_t i=0;i<json_array_get_count(ip_whitelist);i++) {
+            const char *ip =json_array_get_string(ip_whitelist, i);
+            bool blacklisted = false;
+            for (size_t j = 0;j<route->ip_blacklist.length;j++) {
+                const char *blocked_ip =route->ip_blacklist.data[j];
+                if (strcmp(ip, blocked_ip) == 0) {
+                    blacklisted = true;
                     break;
                 }
             }
-            if (!is_blacklisted) {
-                vec_push(&(route->ip_whitelist), (void*)whitelist_ip);
+            if (!blacklisted) {
+                vec_push(&route->ip_whitelist, (void *)ip);
             }
         }
     }
 
+    // Parse GZIP configuration
+    route->gzip_enable = false;
+    route->gzip_level = -1;
+
+    if (json_object_has_value(route_object, "gzip_enable")) {
+        route->gzip_enable = json_object_get_boolean(route_object, "gzip_enable");
+    }
+
+    if (json_object_has_value(route_object, "gzip_level")) {
+        route->gzip_level = (int)json_object_get_number(route_object, "gzip_level");
+    }
+
+    JSON_Array *gzip_mime_types = json_object_get_array(route_object, "gzip_mime_types");
+
+    if (gzip_mime_types) {
+        for (size_t i = 0; i < json_array_get_count(gzip_mime_types); i++) {
+            const char *mime_type = json_array_get_string(gzip_mime_types, i);
+
+            if (mime_type)
+                vec_push(&route->gzip_mime_types, (void *)mime_type);
+        }
+    }
     return route;
 }
 
