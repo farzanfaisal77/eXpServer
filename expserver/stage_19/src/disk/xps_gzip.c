@@ -1,4 +1,4 @@
-#include <xps_gzip.h>
+#include "xps_gzip.h"
 
 xps_gzip_t *xps_gzip_create(int level) {
 
@@ -65,6 +65,7 @@ void gzip_compress(xps_gzip_t *gzip, bool flush){
     xps_buffer_t *in_buff = NULL;
 
     if(!flush) {
+        size_t input_len = gzip->sink->pipe->buff_list->len;
         in_buff = xps_pipe_sink_read(gzip->sink, input_len);
         if(!in_buff) {
             logger(LOG_ERROR, "gzip_compress()", "xps_pipe_sink_read() failed");

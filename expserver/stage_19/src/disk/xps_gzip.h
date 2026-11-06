@@ -22,4 +22,7 @@ void gzip_sink_handler(void *ptr);
 void gzip_sink_close_handler(void *ptr);
 void gzip_source_handler(void *ptr);
 void gzip_source_close_handler(void *ptr);
+void gzip_check_destroy(xps_gzip_t *gzip);
+
+#endif
 

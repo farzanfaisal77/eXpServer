@@ -36,6 +36,7 @@ xps_session_t *xps_session_create(xps_core_t *core, xps_connection_t *client) {
     session->upstream_error_res_set = false;
     session->upstream_write_bytes = 0;
     session->file = NULL;
+    session->gzip = NULL;
     session->to_client_buff = NULL;
     session->from_client_buff = NULL;
     session->client_sink->ready = true;
@@ -445,6 +446,14 @@ void session_process_request(xps_session_t *session) {
         } 
     }
 
+    // Check if client accepts GZIP encoding
+    const char *accept_encoding = xps_http_get_header(&session->http_req->headers, "Accept-Encoding");
+    bool client_accepts_gzip = false;
+    if (accept_encoding != NULL && strstr(accept_encoding, "gzip") != NULL) {
+        client_accepts_gzip = true;
+    }
+    bool use_gzip = client_accepts_gzip && lookup->gzip_enable;
+
     if (lookup->type == REQ_FILE_SERVE) {
         if(lookup->dir_path != NULL) {
             // non null dir path = directory browsing
@@ -562,9 +571,13 @@ void session_process_request(xps_session_t *session) {
             if (session->file->mime_type) {
                 xps_http_set_header(&http_res->headers, "Content-Type", session->file->mime_type);
             }
-            char len_str[32];
-            sprintf(len_str, "%zu", session->file->size);
-            xps_http_set_header(&http_res->headers, "Content-Length", len_str);
+            if (use_gzip) {
+                xps_http_set_header(&http_res->headers, "Content-Encoding", "gzip");
+            } else {
+                char len_str[32];
+                sprintf(len_str, "%zu", session->file->size);
+                xps_http_set_header(&http_res->headers, "Content-Length", len_str);
+            }
 
             xps_buffer_t *buff = xps_http_res_serialize(http_res);
             if (buff == NULL) {
@@ -575,9 +588,28 @@ void session_process_request(xps_session_t *session) {
             set_to_client_buff(session, buff);
             xps_http_res_destroy(http_res);
         }
-        if (xps_pipe_create(session->core, DEFAULT_PIPE_BUFF_THRESH, session->file->source, session->file_sink) == NULL) {
-            logger(LOG_ERROR, "session_process_request()", "xps_pipe_create() failed for file source and file sink");
-            return;
+        if (use_gzip) {
+            // Create GZIP instance
+            session->gzip = xps_gzip_create(lookup->gzip_level);
+            if (session->gzip == NULL) {
+                logger(LOG_ERROR, "session_process_request()", "xps_gzip_create() failed");
+                return;
+            }
+            // Connect file source to GZIP sink
+            if (xps_pipe_create(session->core, DEFAULT_PIPE_BUFF_THRESH, session->file->source, session->gzip->sink) == NULL) {
+                logger(LOG_ERROR, "session_process_request()", "xps_pipe_create() failed for file source and GZIP sink");
+                return;
+            }
+            // Connect GZIP source to session file sink
+            if (xps_pipe_create(session->core, DEFAULT_PIPE_BUFF_THRESH, session->gzip->source, session->file_sink) == NULL) {
+                logger(LOG_ERROR, "session_process_request()", "xps_pipe_create() failed for GZIP source and file sink");
+                return;
+            }
+        } else {
+            if (xps_pipe_create(session->core, DEFAULT_PIPE_BUFF_THRESH, session->file->source, session->file_sink) == NULL) {
+                logger(LOG_ERROR, "session_process_request()", "xps_pipe_create() failed for file source and file sink");
+                return;
+            }
         }
     }
 

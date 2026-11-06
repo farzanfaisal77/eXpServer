@@ -20,4 +20,5 @@ gcc -g -o xps \
     utils/xps_logger.c \
     utils/xps_utils.c \
     utils/xps_buffer.c \
-    utils/xps_cliargs.c
+    utils/xps_cliargs.c \
+    -lz
